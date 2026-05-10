@@ -4,7 +4,7 @@ import { useTransactions } from "../hooks/useTransaction";
 import { useAuth } from "../hooks/useAuth";
 import TransactionModal from "../components/TransactionModal";
 import SummaryCard from "../components/SummaryCard";
-import { ExpensePieChart, IncomeExpenseBarChart } from "../components/chart";
+import { ExpensePieChart, IncomeExpenseBarChart } from "../components/Chart";
 
 /* ─── Font injection ─────────────────────────────────────────────────────── */
 const FONT_HREF =
