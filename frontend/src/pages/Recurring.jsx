@@ -4,7 +4,6 @@ import {
   addRecurringTransaction,
   updateRecurringTransaction,
   deleteRecurringTransaction,
-  toggleRecurringTransaction,
 } from "../api/recurringApi";
 import { getCategories } from "../api/categoryApi";
 
@@ -480,7 +479,7 @@ const RecurringRow = ({ item, onEdit, onDelete, onToggle, toggling, idx }) => {
         "gap-3 px-5 py-3.5 border-b border-[#27272a]/40 last:border-0",
         "transition-colors duration-100",
         hovered ? "bg-[#1a1a1e]" : idx % 2 !== 0 ? "bg-white/[0.01]" : "",
-        !item.active ? "opacity-50" : "",
+        !item.isActive ? "opacity-50" : "",
       ].join(" ")}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -560,9 +559,9 @@ const RecurringRow = ({ item, onEdit, onDelete, onToggle, toggling, idx }) => {
 
         {/* Status toggle */}
         <StatusToggle
-          active={item.active}
+          active={item.isActive}
           loading={toggling === item._id}
-          onClick={() => onToggle(item._id, item.active)}
+          onClick={() => onToggle(item._id, item.isActive)}
         />
 
         {/* Action buttons — visible on hover */}
@@ -678,8 +677,8 @@ const RecurringTransactions = () => {
     let list = items;
     if (filterType) list = list.filter((i) => i.type === filterType);
     if (filterFreq) list = list.filter((i) => i.frequency === filterFreq);
-    if (filterStatus === "active") list = list.filter((i) => i.active);
-    if (filterStatus === "paused") list = list.filter((i) => !i.active);
+    if (filterStatus === "active") list = list.filter((i) => i.isActive);
+    if (filterStatus === "paused") list = list.filter((i) => !i.isActive);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -694,7 +693,7 @@ const RecurringTransactions = () => {
 
   /* ── Derived: aggregate stats ── */
   const stats = useMemo(() => {
-    const active = items.filter((i) => i.active);
+    const active = items.filter((i) => i.isActive);
     const monthly = active.reduce(
       (s, i) =>
         s + (i.type === "expense" ? toMonthly(i.amount, i.frequency) : 0),
@@ -753,24 +752,44 @@ const RecurringTransactions = () => {
 
   /* ── Toggle active ── */
   const handleToggle = async (id, currentActive) => {
-    // Optimistic update — flip immediately so the toggle feels instant
+    // Find the full item so we can send a complete payload to PUT
+    const item = items.find((i) => i._id === id);
+    if (!item) return;
+
+    // Optimistic update — flip immediately
     setItems((prev) =>
-      prev.map((i) => (i._id === id ? { ...i, active: !i.active } : i)),
+      prev.map((i) => (i._id === id ? { ...i, isActive: !i.isActive } : i)),
     );
     setToggling(id);
-    try {
-      const res = await toggleRecurringTransaction(id, currentActive);
-      // Unwrap response: may be { recurringTransaction } | { data } | plain object
-      const updated = res?.recurringTransaction ?? res?.data ?? res ?? null;
 
-      if (updated && updated._id) {
+    try {
+      // Send full item fields so backend validation doesn't reject the PUT
+      const payload = {
+        title: item.title,
+        type: item.type,
+        amount: item.amount,
+        category:
+          typeof item.category === "object"
+            ? item.category?._id
+            : item.category,
+        frequency: item.frequency,
+        startDate: item.startDate,
+        endDate: item.endDate || "",
+        note: item.note || "",
+        isActive: !currentActive, // ✅ matches RecurringTransaction model field
+      };
+
+      const res = await updateRecurringTransaction(id, payload);
+      // Unwrap: { recurringTransaction } | { data } | plain object
+      const updated = res?.recurringTransaction ?? res?.data ?? res ?? null;
+      if (updated?._id) {
         setItems((prev) => prev.map((i) => (i._id === id ? updated : i)));
       }
     } catch (err) {
       console.error("Toggle failed:", err);
-      // Rollback optimistic update on error
+      // Rollback on error
       setItems((prev) =>
-        prev.map((i) => (i._id === id ? { ...i, active: !i.active } : i)),
+        prev.map((i) => (i._id === id ? { ...i, isActive: !i.isActive } : i)),
       );
     } finally {
       setToggling(null);
