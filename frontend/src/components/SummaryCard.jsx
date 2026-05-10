@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 
 /* ─── Font injection (JetBrains Mono for numbers) ────────────────────────── */
 const MONO_HREF =
