@@ -174,8 +174,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { transactions: recentTransactions, loading: recentLoading } =
-    useTransactions();
+  const {
+    transactions: recentTransactions,
+    loading: recentLoading,
+    resetFilters,
+  } = useTransactions();
 
   useEffect(() => {
     resetFilters();
