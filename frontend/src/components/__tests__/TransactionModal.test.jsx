@@ -8,6 +8,9 @@
  *  4. Edit mode works
  *  5. Budget warning behavior
  *  6. Loading / submitting state
+ *
+ * Fix: input[type="date"] has no "textbox" ARIA role in jsdom.
+ *      All date-input queries now use container.querySelector('input[type="date"]').
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -73,6 +76,9 @@ vi.mock("../../hooks/useCategories", () => ({
 /**
  * Renders TransactionModal and returns a configured userEvent instance.
  * All props default to a sensible "add expense" baseline.
+ *
+ * Returns `container` so callers can query non-ARIA elements like
+ * input[type="date"] which has no accessible role in jsdom.
  */
 const setup = (props = {}) => {
   const defaultProps = {
@@ -82,12 +88,15 @@ const setup = (props = {}) => {
     ...props,
   };
   const user = userEvent.setup();
-  const utils = render(<TransactionModal {...defaultProps} />);
-  return { user, ...utils, onClose: defaultProps.onClose };
+  const { container, ...utils } = render(
+    <TransactionModal {...defaultProps} />,
+  );
+  return { user, container, ...utils, onClose: defaultProps.onClose };
 };
 
-/** Pick the today's date in YYYY-MM-DD (same as the component's `today` guard). */
-// const todayStr = () => new Date().toISOString().slice(0, 10);
+/** Returns the date input using a direct DOM query (type="date" has no ARIA role in jsdom). */
+const getDateInput = (container) =>
+  container.querySelector('input[type="date"]');
 
 // ─── 1. Render ────────────────────────────────────────────────────────────────
 
@@ -114,10 +123,10 @@ describe("TransactionModal – render", () => {
   });
 
   it("renders all form fields", () => {
-    setup();
+    const { container } = setup();
     expect(screen.getByPlaceholderText(/amount/i)).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "" })).toBeInTheDocument(); // category select
-    expect(screen.getByRole("textbox", { name: /date/i })).toBeInTheDocument(); // date input (empty by default)
+    expect(screen.getAllByRole("combobox").length).toBeGreaterThan(0);
+    expect(getDateInput(container)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/note/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/upi/i)).toBeInTheDocument();
   });
@@ -135,9 +144,7 @@ describe("TransactionModal – render", () => {
 
   it("only lists income categories in income mode", () => {
     setup({ mode: "income" });
-    // The first combobox is the category selector when the payment select isn't rendered first
     const allSelects = screen.getAllByRole("combobox");
-    // Find the one that has Salary/Freelance options
     const categorySelect = allSelects.find((s) =>
       within(s)
         .queryAllByRole("option")
@@ -212,7 +219,6 @@ describe("TransactionModal – validation", () => {
     const { user } = setup();
     await user.type(screen.getByPlaceholderText(/amount/i), "500");
 
-    // Select a category
     const categorySelect = screen.getAllByRole("combobox")[0];
     await user.selectOptions(categorySelect, "cat-food-01");
 
@@ -224,12 +230,9 @@ describe("TransactionModal – validation", () => {
   it("clears the error banner on subsequent valid submission attempt", async () => {
     const { user } = setup();
 
-    // Trigger a validation error first
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/valid amount/i)).toBeInTheDocument();
 
-    // Fill in amount – error should go away on next submit (with category still
-    // missing the error changes, proving the first one cleared)
     await user.type(screen.getByPlaceholderText(/amount/i), "200");
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(screen.queryByText(/valid amount/i)).not.toBeInTheDocument();
@@ -251,11 +254,10 @@ describe("TransactionModal – add mode submission", () => {
     });
 
     const onClose = vi.fn();
-    const { user } = setup({ mode: "expense", onClose });
+    const { user, container } = setup({ mode: "expense", onClose });
 
     await user.type(screen.getByPlaceholderText(/amount/i), "750");
 
-    // Category
     const allSelects = screen.getAllByRole("combobox");
     const categorySelect = allSelects.find((s) =>
       within(s)
@@ -264,14 +266,10 @@ describe("TransactionModal – add mode submission", () => {
     );
     await user.selectOptions(categorySelect, "cat-food-01");
 
-    // Date
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-20");
+    await user.type(getDateInput(container), "2025-04-20");
 
-    // Note
     await user.type(screen.getByPlaceholderText(/note/i), "Lunch");
 
-    // Payment method
     const paymentSelect = allSelects.find((s) =>
       within(s)
         .queryAllByRole("option")
@@ -303,7 +301,7 @@ describe("TransactionModal – add mode submission", () => {
       warningMessage: "",
     });
 
-    const { user } = setup({ mode: "income", onClose: vi.fn() });
+    const { user, container } = setup({ mode: "income", onClose: vi.fn() });
 
     await user.type(screen.getByPlaceholderText(/amount/i), "50000");
 
@@ -315,8 +313,7 @@ describe("TransactionModal – add mode submission", () => {
     );
     await user.selectOptions(categorySelect, "cat-sal-01");
 
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-01");
+    await user.type(getDateInput(container), "2025-04-01");
 
     await user.click(screen.getByRole("button", { name: /save/i }));
 
@@ -335,7 +332,7 @@ describe("TransactionModal – add mode submission", () => {
     });
 
     const onClose = vi.fn();
-    const { user } = setup({ mode: "expense", onClose });
+    const { user, container } = setup({ mode: "expense", onClose });
 
     await user.type(screen.getByPlaceholderText(/amount/i), "300");
     const allSelects = screen.getAllByRole("combobox");
@@ -345,8 +342,7 @@ describe("TransactionModal – add mode submission", () => {
         .some((o) => o.value === "cat-food-01"),
     );
     await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
+    await user.type(getDateInput(container), "2025-04-10");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
@@ -357,7 +353,7 @@ describe("TransactionModal – add mode submission", () => {
       response: { data: { message: "Server error: category not found" } },
     });
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
 
     await user.type(screen.getByPlaceholderText(/amount/i), "200");
     const allSelects = screen.getAllByRole("combobox");
@@ -367,8 +363,7 @@ describe("TransactionModal – add mode submission", () => {
         .some((o) => o.value === "cat-food-01"),
     );
     await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
+    await user.type(getDateInput(container), "2025-04-10");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(
@@ -379,7 +374,7 @@ describe("TransactionModal – add mode submission", () => {
   it("falls back to a generic error message when rejection has no message", async () => {
     mockAddTransaction.mockRejectedValue(new Error("Network failure"));
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
 
     await user.type(screen.getByPlaceholderText(/amount/i), "100");
     const allSelects = screen.getAllByRole("combobox");
@@ -389,8 +384,7 @@ describe("TransactionModal – add mode submission", () => {
         .some((o) => o.value === "cat-food-01"),
     );
     await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
+    await user.type(getDateInput(container), "2025-04-10");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(
@@ -422,9 +416,11 @@ describe("TransactionModal – edit mode", () => {
   });
 
   it("pre-populates the date from the existing transaction", () => {
-    setup({ mode: "expense", transaction: MOCK_EXPENSE_TX });
-    // date slice from ISO string: "2025-04-15"
-    expect(screen.getByDisplayValue("2025-04-15")).toBeInTheDocument();
+    const { container } = setup({
+      mode: "expense",
+      transaction: MOCK_EXPENSE_TX,
+    });
+    expect(getDateInput(container).value).toBe("2025-04-15");
   });
 
   it("pre-selects the correct category", () => {
@@ -448,7 +444,6 @@ describe("TransactionModal – edit mode", () => {
       onClose,
     });
 
-    // Change the amount
     const amountInput = screen.getByDisplayValue("1500");
     await user.clear(amountInput);
     await user.type(amountInput, "2000");
@@ -562,7 +557,8 @@ describe("TransactionModal – budget warning", () => {
     mockAddTransaction.mockReset();
   });
 
-  const submitValidForm = async (user) => {
+  /** Fills in the minimum valid form fields and submits. */
+  const submitValidForm = async (user, container) => {
     await user.type(screen.getByPlaceholderText(/amount/i), "5000");
     const allSelects = screen.getAllByRole("combobox");
     const categorySelect = allSelects.find((s) =>
@@ -571,8 +567,7 @@ describe("TransactionModal – budget warning", () => {
         .some((o) => o.value === "cat-food-01"),
     );
     await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
+    await user.type(getDateInput(container), "2025-04-10");
     await user.click(screen.getByRole("button", { name: /save/i }));
   };
 
@@ -583,8 +578,8 @@ describe("TransactionModal – budget warning", () => {
       warningMessage: "You exceeded your budget by ₹500.00",
     });
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
-    await submitValidForm(user);
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
+    await submitValidForm(user, container);
 
     expect(
       await screen.findByText(/exceeded your budget by ₹500\.00/i),
@@ -599,8 +594,8 @@ describe("TransactionModal – budget warning", () => {
     });
 
     const onClose = vi.fn();
-    const { user } = setup({ mode: "expense", onClose });
-    await submitValidForm(user);
+    const { user, container } = setup({ mode: "expense", onClose });
+    await submitValidForm(user, container);
 
     await screen.findByText(/exceeded your budget by ₹100\.00/i);
     expect(onClose).not.toHaveBeenCalled();
@@ -614,8 +609,8 @@ describe("TransactionModal – budget warning", () => {
     });
 
     const onClose = vi.fn();
-    const { user } = setup({ mode: "expense", onClose });
-    await submitValidForm(user);
+    const { user, container } = setup({ mode: "expense", onClose });
+    await submitValidForm(user, container);
 
     const okButton = await screen.findByRole("button", { name: /ok/i });
     await user.click(okButton);
@@ -631,8 +626,8 @@ describe("TransactionModal – budget warning", () => {
     });
 
     const onClose = vi.fn();
-    const { user } = setup({ mode: "expense", onClose });
-    await submitValidForm(user);
+    const { user, container } = setup({ mode: "expense", onClose });
+    await submitValidForm(user, container);
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(
@@ -648,8 +643,8 @@ describe("TransactionModal – budget warning", () => {
       warningMessage: warnMsg,
     });
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
-    await submitValidForm(user);
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
+    await submitValidForm(user, container);
 
     expect(await screen.findByText(warnMsg)).toBeInTheDocument();
   });
@@ -663,13 +658,9 @@ describe("TransactionModal – loading state", () => {
     mockEditTransaction.mockReset();
   });
 
-  it("shows 'Saving…' on the submit button while the request is in flight", async () => {
-    // Never resolve so we can inspect the in-flight state
-    mockAddTransaction.mockReturnValue(new Promise(() => {}));
-
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
-
-    await user.type(screen.getByPlaceholderText(/amount/i), "400");
+  /** Fills the form to a valid state without submitting. */
+  const fillValidForm = async (user, container, amount = "400") => {
+    await user.type(screen.getByPlaceholderText(/amount/i), amount);
     const allSelects = screen.getAllByRole("combobox");
     const categorySelect = allSelects.find((s) =>
       within(s)
@@ -677,9 +668,14 @@ describe("TransactionModal – loading state", () => {
         .some((o) => o.value === "cat-food-01"),
     );
     await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
+    await user.type(getDateInput(container), "2025-04-10");
+  };
 
+  it("shows 'Saving…' on the submit button while the request is in flight", async () => {
+    mockAddTransaction.mockReturnValue(new Promise(() => {}));
+
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
+    await fillValidForm(user, container);
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(await screen.findByText(/saving\.\.\./i)).toBeInTheDocument();
@@ -688,19 +684,8 @@ describe("TransactionModal – loading state", () => {
   it("disables the Save button while submitting", async () => {
     mockAddTransaction.mockReturnValue(new Promise(() => {}));
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
-
-    await user.type(screen.getByPlaceholderText(/amount/i), "400");
-    const allSelects = screen.getAllByRole("combobox");
-    const categorySelect = allSelects.find((s) =>
-      within(s)
-        .queryAllByRole("option")
-        .some((o) => o.value === "cat-food-01"),
-    );
-    await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
-
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
+    await fillValidForm(user, container);
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     const savingBtn = await screen.findByText(/saving\.\.\./i);
@@ -710,25 +695,12 @@ describe("TransactionModal – loading state", () => {
   it("disables the Cancel button while submitting", async () => {
     mockAddTransaction.mockReturnValue(new Promise(() => {}));
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
-
-    await user.type(screen.getByPlaceholderText(/amount/i), "400");
-    const allSelects = screen.getAllByRole("combobox");
-    const categorySelect = allSelects.find((s) =>
-      within(s)
-        .queryAllByRole("option")
-        .some((o) => o.value === "cat-food-01"),
-    );
-    await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
-
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
+    await fillValidForm(user, container);
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await screen.findByText(/saving\.\.\./i);
-
-    const cancelBtn = screen.getByRole("button", { name: /cancel/i });
-    expect(cancelBtn).toBeDisabled();
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
   });
 
   it("re-enables buttons after submission completes", async () => {
@@ -738,22 +710,10 @@ describe("TransactionModal – loading state", () => {
       warningMessage: "",
     });
 
-    const { user } = setup({ mode: "expense", onClose: vi.fn() });
-
-    await user.type(screen.getByPlaceholderText(/amount/i), "100");
-    const allSelects = screen.getAllByRole("combobox");
-    const categorySelect = allSelects.find((s) =>
-      within(s)
-        .queryAllByRole("option")
-        .some((o) => o.value === "cat-food-01"),
-    );
-    await user.selectOptions(categorySelect, "cat-food-01");
-    const dateInput = screen.getByRole("textbox", { name: /date/i });
-    await user.type(dateInput, "2025-04-10");
-
+    const { user, container } = setup({ mode: "expense", onClose: vi.fn() });
+    await fillValidForm(user, container, "100");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
-    // After resolution the modal closes; save button should not be in "Saving…" state
     await waitFor(() =>
       expect(screen.queryByText(/saving\.\.\./i)).not.toBeInTheDocument(),
     );
