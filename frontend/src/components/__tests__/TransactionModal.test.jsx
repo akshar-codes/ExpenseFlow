@@ -1,20 +1,23 @@
 /**
  * TransactionModal.test.jsx
  *
- * Coverage:
- *  1. Renders correctly (add-income, add-expense, edit modes)
- *  2. Validation errors display
- *  3. Payload submission works (add path)
- *  4. Edit mode works
- *  5. Budget warning behavior
- *  6. Loading / submitting state
- *
- * Fix: input[type="date"] has no "textbox" ARIA role in jsdom.
- *      All date-input queries now use container.querySelector('input[type="date"]').
+ * Fixes applied vs previous version:
+ *  1. Added `mockAddTransaction.mockReset()` to the "edit mode" beforeEach so
+ *     stale call-counts from the "add mode submission" suite don't bleed through.
+ *  2. Replaced `userEvent.type(amountInput, "0")` / `userEvent.type(amountInput, "-50")`
+ *     with `fireEvent.change` — jsdom's number-input implementation doesn't reliably
+ *     fire React's synthetic onChange for edge-case values via userEvent; fireEvent
+ *     bypasses that layer and sets React state directly.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  within,
+  fireEvent,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TransactionModal from "../TransactionModal";
 
@@ -39,18 +42,6 @@ const MOCK_EXPENSE_TX = {
   paymentMethod: "cash",
 };
 
-const MOCK_INCOME_TX = {
-  _id: "tx-002",
-  type: "income",
-  amount: 85000,
-  category: { _id: "cat-sal-01", name: "Salary" },
-  categoryId: "cat-sal-01",
-  categoryName: "Salary",
-  date: "2025-04-01T00:00:00.000Z",
-  note: "April salary",
-  paymentMethod: "bank",
-};
-
 // ─── Module mocks ─────────────────────────────────────────────────────────────
 
 const mockAddTransaction = vi.fn();
@@ -73,13 +64,6 @@ vi.mock("../../hooks/useCategories", () => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Renders TransactionModal and returns a configured userEvent instance.
- * All props default to a sensible "add expense" baseline.
- *
- * Returns `container` so callers can query non-ARIA elements like
- * input[type="date"] which has no accessible role in jsdom.
- */
 const setup = (props = {}) => {
   const defaultProps = {
     mode: "expense",
@@ -94,7 +78,7 @@ const setup = (props = {}) => {
   return { user, container, ...utils, onClose: defaultProps.onClose };
 };
 
-/** Returns the date input using a direct DOM query (type="date" has no ARIA role in jsdom). */
+/** input[type="date"] has no ARIA role in jsdom — query via DOM directly. */
 const getDateInput = (container) =>
   container.querySelector('input[type="date"]');
 
@@ -134,8 +118,9 @@ describe("TransactionModal – render", () => {
   it("only lists expense categories in expense mode", () => {
     setup({ mode: "expense" });
     const categorySelect = screen.getAllByRole("combobox")[0];
-    const options = within(categorySelect).getAllByRole("option");
-    const names = options.map((o) => o.textContent);
+    const names = within(categorySelect)
+      .getAllByRole("option")
+      .map((o) => o.textContent);
     expect(names).toContain("Food");
     expect(names).toContain("Transport");
     expect(names).not.toContain("Salary");
@@ -192,16 +177,24 @@ describe("TransactionModal – validation", () => {
   });
 
   it("shows error when amount is zero", async () => {
+    // React 19 maps its synthetic onChange to the native "input" event (not
+    // "change") for number inputs. fireEvent.change updates the DOM value but
+    // never reaches React state. fireEvent.input triggers the correct event.
     const { user } = setup();
-    await user.type(screen.getByPlaceholderText(/amount/i), "0");
+    fireEvent.input(screen.getByPlaceholderText(/amount/i), {
+      target: { value: "0" },
+    });
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/valid amount/i)).toBeInTheDocument();
     expect(mockAddTransaction).not.toHaveBeenCalled();
   });
 
   it("shows error when amount is negative", async () => {
+    // Same reasoning: use fireEvent.input so React state receives the value.
     const { user } = setup();
-    await user.type(screen.getByPlaceholderText(/amount/i), "-50");
+    fireEvent.input(screen.getByPlaceholderText(/amount/i), {
+      target: { value: "-50" },
+    });
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/valid amount/i)).toBeInTheDocument();
     expect(mockAddTransaction).not.toHaveBeenCalled();
@@ -218,10 +211,8 @@ describe("TransactionModal – validation", () => {
   it("shows error when date is missing", async () => {
     const { user } = setup();
     await user.type(screen.getByPlaceholderText(/amount/i), "500");
-
     const categorySelect = screen.getAllByRole("combobox")[0];
     await user.selectOptions(categorySelect, "cat-food-01");
-
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/select a date/i)).toBeInTheDocument();
     expect(mockAddTransaction).not.toHaveBeenCalled();
@@ -229,10 +220,8 @@ describe("TransactionModal – validation", () => {
 
   it("clears the error banner on subsequent valid submission attempt", async () => {
     const { user } = setup();
-
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/valid amount/i)).toBeInTheDocument();
-
     await user.type(screen.getByPlaceholderText(/amount/i), "200");
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(screen.queryByText(/valid amount/i)).not.toBeInTheDocument();
@@ -265,9 +254,7 @@ describe("TransactionModal – add mode submission", () => {
         .some((o) => o.value === "cat-food-01"),
     );
     await user.selectOptions(categorySelect, "cat-food-01");
-
     await user.type(getDateInput(container), "2025-04-20");
-
     await user.type(screen.getByPlaceholderText(/note/i), "Lunch");
 
     const paymentSelect = allSelects.find((s) =>
@@ -276,7 +263,6 @@ describe("TransactionModal – add mode submission", () => {
         .some((o) => o.value === "cash"),
     );
     await user.selectOptions(paymentSelect, "cash");
-
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
@@ -312,9 +298,7 @@ describe("TransactionModal – add mode submission", () => {
         .some((o) => o.value === "cat-sal-01"),
     );
     await user.selectOptions(categorySelect, "cat-sal-01");
-
     await user.type(getDateInput(container), "2025-04-01");
-
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
@@ -397,6 +381,10 @@ describe("TransactionModal – add mode submission", () => {
 
 describe("TransactionModal – edit mode", () => {
   beforeEach(() => {
+    // FIX: reset BOTH spies — stale mockAddTransaction calls from the "add mode
+    // submission" suite would otherwise cause the "not.toHaveBeenCalled" assertion
+    // to fail in "calls editTransaction (not addTransaction) on submit".
+    mockAddTransaction.mockReset();
     mockEditTransaction.mockReset();
   });
 
@@ -557,7 +545,6 @@ describe("TransactionModal – budget warning", () => {
     mockAddTransaction.mockReset();
   });
 
-  /** Fills in the minimum valid form fields and submits. */
   const submitValidForm = async (user, container) => {
     await user.type(screen.getByPlaceholderText(/amount/i), "5000");
     const allSelects = screen.getAllByRole("combobox");
@@ -658,7 +645,6 @@ describe("TransactionModal – loading state", () => {
     mockEditTransaction.mockReset();
   });
 
-  /** Fills the form to a valid state without submitting. */
   const fillValidForm = async (user, container, amount = "400") => {
     await user.type(screen.getByPlaceholderText(/amount/i), amount);
     const allSelects = screen.getAllByRole("combobox");

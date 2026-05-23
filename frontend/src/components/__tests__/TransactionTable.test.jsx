@@ -2,7 +2,9 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import TransactionTable from "../src/components/TransactionTable";
+// FIX: was "../src/components/TransactionTable" — wrong root.
+// File lives at src/components/__tests__/, so the component is one level up.
+import TransactionTable from "../TransactionTable";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -46,7 +48,7 @@ const renderTable = (props = {}) =>
   );
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PART 1 — TransactionTable
+// TransactionTable
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("TransactionTable", () => {
@@ -55,14 +57,12 @@ describe("TransactionTable", () => {
   describe("row rendering", () => {
     it("renders one row per transaction", () => {
       renderTable();
-      // Each row shows a category name cell
       expect(screen.getByText("Food")).toBeInTheDocument();
       expect(screen.getByText("Salary")).toBeInTheDocument();
     });
 
     it("displays the formatted amount with correct sign", () => {
       renderTable();
-      // expense → minus sign, income → plus sign
       expect(screen.getByText(/−.*1,500/)).toBeInTheDocument();
       expect(screen.getByText(/\+.*85,000/)).toBeInTheDocument();
     });
@@ -80,7 +80,6 @@ describe("TransactionTable", () => {
 
     it("renders an em-dash placeholder when note is absent", () => {
       renderTable();
-      // The Salary row has no note — renders —
       const dashes = screen.getAllByText("—");
       expect(dashes.length).toBeGreaterThan(0);
     });
@@ -155,7 +154,6 @@ describe("TransactionTable", () => {
       renderTable();
       const deleteButtons = screen.getAllByText("Delete");
       await userEvent.click(deleteButtons[0]);
-
       expect(screen.getByText("Delete transaction?")).toBeInTheDocument();
     });
 
@@ -163,14 +161,11 @@ describe("TransactionTable", () => {
       const onDelete = vi.fn().mockResolvedValue(undefined);
       renderTable({ onDelete });
 
-      // Open the dialog via the first row's Delete button
       await userEvent.click(screen.getAllByText("Delete")[0]);
 
-      // The dialog is now visible; its "Delete" button is the last one in the
-      // DOM (row buttons appear first, then the dialog overlay on top).
+      // Dialog "Delete" button is the last one rendered
       const allDeleteButtons = screen.getAllByText("Delete");
-      const dialogConfirmBtn = allDeleteButtons[allDeleteButtons.length - 1];
-      await userEvent.click(dialogConfirmBtn);
+      await userEvent.click(allDeleteButtons[allDeleteButtons.length - 1]);
 
       expect(onDelete).toHaveBeenCalledWith("tx-001");
     });
@@ -203,7 +198,6 @@ describe("TransactionTable", () => {
           onEdit={vi.fn()}
         />,
       );
-      // Table should still mount; no category cells rendered
       expect(screen.queryByText("Food")).not.toBeInTheDocument();
       expect(screen.queryByText("Salary")).not.toBeInTheDocument();
     });
