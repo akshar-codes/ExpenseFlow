@@ -1,50 +1,26 @@
 import pino from "pino";
 
-// ─── Transport ────────────────────────────────────────────────────────────────
+const logger = pino({
+  level:
+    process.env.LOG_LEVEL ??
+    (process.env.NODE_ENV === "production" ? "info" : "debug"),
 
-const usePretty =
-  process.env.LOG_PRETTY === "true" ||
-  (process.env.LOG_PRETTY !== "false" && process.env.NODE_ENV !== "production");
+  timestamp: pino.stdTimeFunctions.isoTime,
 
-const transport = usePretty
-  ? {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "HH:MM:ss.l",
-        ignore: "pid,hostname",
-      },
-    }
-  : undefined;
+  base: { pid: process.pid },
 
-// ─── Logger ───────────────────────────────────────────────────────────────────
-const logger = pino(
-  {
-    level:
-      process.env.LOG_LEVEL ??
-      (process.env.NODE_ENV === "production" ? "info" : "debug"),
-
-    timestamp: pino.stdTimeFunctions.isoTime,
-
-    base: { pid: process.pid },
-
-    // ── Redaction ─────────────────────────────────────────────────────────────
-
-    redact: {
-      paths: [
-        "req.headers.authorization", // Bearer <accessToken>
-        "req.headers.cookie", // refreshToken cookie
-
-        "*.password",
-        "*.currentPassword",
-        "*.newPassword",
-        "*.refreshToken",
-        "*.accessToken",
-      ],
-      censor: "[REDACTED]",
-    },
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "*.password",
+      "*.currentPassword",
+      "*.newPassword",
+      "*.refreshToken",
+      "*.accessToken",
+    ],
+    censor: "[REDACTED]",
   },
-  transport,
-);
+});
 
 export default logger;

@@ -73,9 +73,8 @@ const startServer = async () => {
     startRecurringJob();
 
     const server = app.listen(PORT, () => {
-      logger.info(
-        { port: PORT, env: process.env.NODE_ENV || "development" },
-        "Server listening",
+      console.log(
+        `Server listening on port ${PORT} [${process.env.NODE_ENV || "development"}]`,
       );
     });
 

@@ -5,9 +5,9 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "test": "jest --runInBand",
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "dev": "nodemon src/server.js | pino-pretty --colorize --translateTime \"HH:MM:ss.l\" --ignore \"pid,hostname\"",
+    "start": "node src/server.js",
+    "test": "jest --runInBand"
   },
   "keywords": [],
   "author": "Akshar Gupta",
