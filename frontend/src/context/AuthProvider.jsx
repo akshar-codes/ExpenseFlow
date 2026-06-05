@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import API, { setAccessToken, clearAccessToken } from "../api/axios";
@@ -20,7 +20,12 @@ export const AuthProvider = ({ children }) => {
   }, [navigate]);
 
   // ── Restore session on page load via refresh token cookie ─────────────────
+  const initRanRef = useRef(false);
+
   useEffect(() => {
+    if (initRanRef.current) return;
+    initRanRef.current = true;
+
     const init = async () => {
       try {
         const refreshBase =
@@ -37,7 +42,6 @@ export const AuthProvider = ({ children }) => {
         const meRes = await API.get("/auth/me");
         setUser(meRes.data.user || meRes.data);
       } catch {
-        // No valid session — user stays null, shown login page
         setUser(null);
       } finally {
         setLoading(false);
