@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { ROUTES } from "../constants/routes.js";
+import useAuthForm from "../hooks/useAuthForm";
+import { ROUTES } from "../constants/routes";
 import AuthLayout from "../components/auth/AuthLayout";
 import AuthCard from "../components/auth/AuthCard";
 import AuthInput from "../components/auth/AuthInput";
@@ -9,7 +10,7 @@ import RegisterMarketingPanel from "../components/auth/RegisterMarketingPanel";
 import PasswordStrengthMeter from "../components/auth/PasswordStrengthMeter";
 import SocialLoginButton from "../components/auth/SocialLoginButton";
 import DividerWithText from "../components/auth/DividerWithText";
-import useAuthForm from "../hooks/useAuthForm";
+import { mapAuthError } from "../utils/authErrors";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const EyeOpen = () => (
@@ -47,6 +48,8 @@ const EyeClosed = () => (
 // ─── Success overlay ──────────────────────────────────────────────────────────
 const SuccessOverlay = ({ name }) => (
   <div
+    role="status"
+    aria-live="polite"
     className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl z-20"
     style={{
       background:
@@ -63,7 +66,7 @@ const SuccessOverlay = ({ name }) => (
         animation: "pulse-ring 1.5s ease-out",
       }}
     >
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
           d="M5 13l4 4L19 7"
           stroke="white"
@@ -115,6 +118,12 @@ const Register = () => {
   const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState("");
 
+  // ── Clear the API-level error when the user starts correcting their input ──
+  const makeChangeHandler = (field) => (e) => {
+    if (apiError) setApiError("");
+    handleChange(field)(e);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError("");
@@ -126,24 +135,18 @@ const Register = () => {
     try {
       await register(values.name.trim(), values.email.trim(), values.password);
       setSuccess(true);
-      // Delay navigation for success animation
       setTimeout(() => navigate(ROUTES.DASHBOARD), 1800);
     } catch (err) {
-      const data = err?.response?.data;
-      const message =
-        data?.message ||
-        (Array.isArray(data?.errors) ? data.errors[0] : null) ||
-        "Registration failed. Please try again.";
+      // ── FIX: centralized error mapper, no raw backend messages ────────────
+      const mapped = mapAuthError(err, "register");
 
       if (
-        message.toLowerCase().includes("email") &&
-        message.toLowerCase().includes("exist")
+        mapped.toLowerCase().includes("email") ||
+        mapped.toLowerCase().includes("account with this email")
       ) {
-        setFieldError("email", "An account with this email already exists");
-      } else if (message.toLowerCase().includes("email")) {
-        setFieldError("email", message);
+        setFieldError("email", mapped);
       } else {
-        setApiError(message);
+        setApiError(mapped);
       }
     } finally {
       setSubmitting(false);
@@ -153,7 +156,7 @@ const Register = () => {
   return (
     <AuthLayout animKey="register" marketingPanel={<RegisterMarketingPanel />}>
       {/* ── Heading ── */}
-      <div className="stagger-1 mb-7">
+      <div className="stagger-1 mb-5">
         <h2
           className="text-2xl font-bold text-white mb-1.5"
           style={{
@@ -175,10 +178,12 @@ const Register = () => {
         {/* Success overlay */}
         {success && <SuccessOverlay name={values.name} />}
 
-        {/* ── API Error ── */}
+        {/* ── API Error banner — animated, screen-reader friendly ─────────── */}
         {apiError && !success && (
           <div
-            className="flex items-start gap-2.5 px-4 py-3 rounded-xl border mb-5 text-sm"
+            role="alert"
+            aria-live="assertive"
+            className="auth-error-banner flex items-start gap-2.5 px-4 py-3 rounded-xl border mb-4 text-sm"
             style={{
               background: "rgba(248,113,113,0.08)",
               borderColor: "rgba(248,113,113,0.2)",
@@ -186,7 +191,12 @@ const Register = () => {
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            <span className="text-base leading-none mt-0.5 shrink-0">⚠</span>
+            <span
+              className="text-base leading-none mt-0.5 shrink-0"
+              aria-hidden
+            >
+              ⚠
+            </span>
             <span>{apiError}</span>
           </div>
         )}
@@ -199,7 +209,7 @@ const Register = () => {
               type="text"
               placeholder="Akshar Gupta"
               value={values.name}
-              onChange={handleChange("name")}
+              onChange={makeChangeHandler("name")}
               onBlur={handleBlur("name")}
               error={errors.name}
               autoComplete="name"
@@ -208,13 +218,13 @@ const Register = () => {
           </div>
 
           {/* Email */}
-          <div className="stagger-3 mt-4">
+          <div className="stagger-3 mt-3">
             <AuthInput
               label="Email address"
               type="email"
               placeholder="you@example.com"
               value={values.email}
-              onChange={handleChange("email")}
+              onChange={makeChangeHandler("email")}
               onBlur={handleBlur("email")}
               error={errors.email}
               autoComplete="email"
@@ -223,13 +233,13 @@ const Register = () => {
           </div>
 
           {/* Password */}
-          <div className="stagger-4 mt-4">
+          <div className="stagger-4 mt-3">
             <AuthInput
               label="Password"
               type={showPassword ? "text" : "password"}
               placeholder="Create a strong password"
               value={values.password}
-              onChange={handleChange("password")}
+              onChange={makeChangeHandler("password")}
               onBlur={handleBlur("password")}
               error={errors.password}
               autoComplete="new-password"
@@ -238,7 +248,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="text-[#52525b] hover:text-[#a1a1aa] transition-colors focus:outline-none"
+                  className="text-[#52525b] hover:text-[#a1a1aa] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   tabIndex={-1}
                 >
@@ -246,7 +256,6 @@ const Register = () => {
                 </button>
               }
             />
-            {/* Password strength meter */}
             <PasswordStrengthMeter
               password={values.password}
               show={values.password.length > 0}
@@ -254,13 +263,13 @@ const Register = () => {
           </div>
 
           {/* Confirm Password */}
-          <div className="stagger-5 mt-4">
+          <div className="stagger-5 mt-3">
             <AuthInput
               label="Confirm password"
               type={showConfirm ? "text" : "password"}
               placeholder="Repeat your password"
               value={values.confirmPassword}
-              onChange={handleChange("confirmPassword")}
+              onChange={makeChangeHandler("confirmPassword")}
               onBlur={handleBlur("confirmPassword")}
               error={errors.confirmPassword}
               autoComplete="new-password"
@@ -269,7 +278,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirm((p) => !p)}
-                  className="text-[#52525b] hover:text-[#a1a1aa] transition-colors focus:outline-none"
+                  className="text-[#52525b] hover:text-[#a1a1aa] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
                   aria-label={showConfirm ? "Hide password" : "Show password"}
                   tabIndex={-1}
                 >
@@ -277,7 +286,6 @@ const Register = () => {
                 </button>
               }
             />
-            {/* Match indicator */}
             {values.confirmPassword &&
               values.password &&
               !errors.confirmPassword && (
@@ -288,14 +296,14 @@ const Register = () => {
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  <span>✓</span> Passwords match
+                  <span aria-hidden>✓</span> Passwords match
                 </p>
               )}
           </div>
 
           {/* Terms note */}
           <p
-            className="stagger-5 text-[11px] text-[#3f3f46] mt-4 mb-5 leading-relaxed"
+            className="stagger-5 text-[11px] text-[#3f3f46] mt-3 mb-4 leading-relaxed"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             By creating an account, you agree to our{" "}
@@ -326,7 +334,8 @@ const Register = () => {
             <button
               type="submit"
               disabled={submitting || success}
-              className="btn-primary w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+              aria-busy={submitting}
+              className="btn-primary w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
               style={{
                 background:
                   submitting || success
@@ -346,6 +355,7 @@ const Register = () => {
                     style={{ animation: "spin-slow 0.7s linear infinite" }}
                     viewBox="0 0 24 24"
                     fill="none"
+                    aria-hidden="true"
                   >
                     <circle
                       className="opacity-25"
@@ -365,7 +375,13 @@ const Register = () => {
                 </span>
               ) : success ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
                     <path
                       d="M5 13l4 4L19 7"
                       stroke="white"
@@ -397,7 +413,7 @@ const Register = () => {
       </AuthCard>
 
       {/* ── Login link ── */}
-      <div className="stagger-7 mt-6 text-center">
+      <div className="stagger-7 mt-4 text-center">
         <p
           className="text-sm text-[#52525b]"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -405,7 +421,7 @@ const Register = () => {
           Already have an account?{" "}
           <button
             onClick={() => navigate(ROUTES.LOGIN)}
-            className="font-semibold transition-colors focus:outline-none"
+            className="font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
             style={{ color: "#10b981" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#34d399")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#10b981")}

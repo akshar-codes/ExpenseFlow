@@ -1,14 +1,15 @@
 import React, { useState, useId } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { ROUTES } from "../constants/routes.js";
+import useAuthForm from "../hooks/useAuthForm";
+import { ROUTES } from "../constants/routes";
 import AuthLayout from "../components/auth/AuthLayout";
 import AuthCard from "../components/auth/AuthCard";
 import AuthInput from "../components/auth/AuthInput";
 import LoginMarketingPanel from "../components/auth/LoginMarketingPanel";
 import SocialLoginButton from "../components/auth/SocialLoginButton";
 import DividerWithText from "../components/auth/DividerWithText";
-import useAuthForm from "../hooks/useAuthForm";
+import { mapAuthError } from "../utils/authErrors";
 
 // ─── Eye icons ────────────────────────────────────────────────────────────────
 const EyeOpen = () => (
@@ -65,6 +66,15 @@ const Login = () => {
 
   const rememberMeId = useId();
 
+  // ── Clear the API-level error banner when the user starts editing ──────────
+  // WHY: stale error messages (e.g. "Invalid email or password") should
+  // disappear the moment the user begins correcting their input, not linger
+  // until the next submission.
+  const makeChangeHandler = (field) => (e) => {
+    if (apiError) setApiError("");
+    handleChange(field)(e);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError("");
@@ -77,19 +87,19 @@ const Login = () => {
       await login(values.email.trim(), values.password);
       navigate(ROUTES.DASHBOARD);
     } catch (err) {
-      const data = err?.response?.data;
-      const message =
-        data?.message ||
-        (Array.isArray(data?.errors) ? data.errors[0] : null) ||
-        "Invalid email or password. Please try again.";
+      // ── FIX: use centralized mapper so no JWT/refresh internals reach users ─
+      const mapped = mapAuthError(err, "login");
 
-      // Specific field errors
-      if (message.toLowerCase().includes("email")) {
-        setFieldError("email", message);
-      } else if (message.toLowerCase().includes("password")) {
-        setFieldError("password", message);
+      // Surface field-specific errors where we can for better UX
+      if (
+        mapped.toLowerCase().includes("email") &&
+        !mapped.toLowerCase().includes("password")
+      ) {
+        setFieldError("email", mapped);
+      } else if (mapped.toLowerCase().includes("password")) {
+        setFieldError("password", mapped);
       } else {
-        setApiError(message);
+        setApiError(mapped);
       }
     } finally {
       setSubmitting(false);
@@ -99,7 +109,7 @@ const Login = () => {
   return (
     <AuthLayout animKey="login" marketingPanel={<LoginMarketingPanel />}>
       {/* ── Heading ── */}
-      <div className="stagger-1 mb-7">
+      <div className="stagger-1 mb-5">
         <h2
           className="text-2xl font-bold text-white mb-1.5"
           style={{
@@ -118,10 +128,12 @@ const Login = () => {
       </div>
 
       <AuthCard>
-        {/* ── API Error ── */}
+        {/* ── API Error banner — animated, screen-reader friendly ─────────── */}
         {apiError && (
           <div
-            className="flex items-start gap-2.5 px-4 py-3 rounded-xl border mb-5 text-sm"
+            role="alert"
+            aria-live="assertive"
+            className="auth-error-banner flex items-start gap-2.5 px-4 py-3 rounded-xl border mb-4 text-sm"
             style={{
               background: "rgba(248,113,113,0.08)",
               borderColor: "rgba(248,113,113,0.2)",
@@ -129,7 +141,12 @@ const Login = () => {
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            <span className="text-base leading-none mt-0.5 shrink-0">⚠</span>
+            <span
+              className="text-base leading-none mt-0.5 shrink-0"
+              aria-hidden
+            >
+              ⚠
+            </span>
             <span>{apiError}</span>
           </div>
         )}
@@ -142,22 +159,24 @@ const Login = () => {
               type="email"
               placeholder="you@example.com"
               value={values.email}
-              onChange={handleChange("email")}
+              onChange={makeChangeHandler("email")}
               onBlur={handleBlur("email")}
               error={errors.email}
               autoComplete="email"
+              // FIX: disable all inputs while submitting (Issue #5)
               disabled={submitting}
+              aria-describedby={errors.email ? "email-error" : undefined}
             />
           </div>
 
           {/* Password */}
-          <div className="stagger-3 mt-4">
+          <div className="stagger-3 mt-3">
             <AuthInput
               label="Password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               value={values.password}
-              onChange={handleChange("password")}
+              onChange={makeChangeHandler("password")}
               onBlur={handleBlur("password")}
               error={errors.password}
               autoComplete="current-password"
@@ -166,7 +185,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="text-[#52525b] hover:text-[#a1a1aa] transition-colors focus:outline-none"
+                  className="text-[#52525b] hover:text-[#a1a1aa] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   tabIndex={-1}
                 >
@@ -177,7 +196,7 @@ const Login = () => {
           </div>
 
           {/* Remember me + Forgot password */}
-          <div className="stagger-4 flex items-center justify-between mt-4 mb-6">
+          <div className="stagger-4 flex items-center justify-between mt-3 mb-5">
             <label
               htmlFor={rememberMeId}
               className="flex items-center gap-2 cursor-pointer group"
@@ -228,7 +247,7 @@ const Login = () => {
 
             <button
               type="button"
-              className="text-[12px] font-medium transition-colors focus:outline-none"
+              className="text-[12px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
               style={{ color: "#10b981", fontFamily: "'DM Sans', sans-serif" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#34d399")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#10b981")}
@@ -242,7 +261,8 @@ const Login = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+              aria-busy={submitting}
+              className="btn-primary w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
               style={{
                 background: submitting
                   ? "rgba(16,185,129,0.5)"
@@ -260,6 +280,7 @@ const Login = () => {
                     style={{ animation: "spin-slow 0.7s linear infinite" }}
                     viewBox="0 0 24 24"
                     fill="none"
+                    aria-hidden="true"
                   >
                     <circle
                       className="opacity-25"
@@ -297,7 +318,7 @@ const Login = () => {
       </AuthCard>
 
       {/* ── Register link ── */}
-      <div className="stagger-7 mt-6 text-center">
+      <div className="stagger-7 mt-4 text-center">
         <p
           className="text-sm text-[#52525b]"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -305,7 +326,7 @@ const Login = () => {
           Don't have an account?{" "}
           <button
             onClick={() => navigate(ROUTES.REGISTER)}
-            className="font-semibold transition-colors focus:outline-none"
+            className="font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
             style={{ color: "#10b981" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#34d399")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#10b981")}
