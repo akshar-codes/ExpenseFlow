@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
 
 const NAV_ITEMS = [
@@ -49,9 +49,13 @@ const Sidebar = () => {
   const sidebarContent = (
     <aside className="h-full w-64 bg-card border-r border-border flex flex-col overflow-y-auto">
       <div className="px-5 py-5 border-b border-border shrink-0">
-        <span className="text-base font-bold tracking-tight text-primaryText">
+        <Link
+          to={ROUTES.HOME}
+          onClick={() => setOpen(false)}
+          className="text-base font-bold tracking-tight text-primaryText hover:text-accent transition-colors duration-150"
+        >
           💸 ExpenseTracker
-        </span>
+        </Link>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-0.5">{navLinks}</nav>
       <div className="px-5 py-4 border-t border-border shrink-0">
