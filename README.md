@@ -2,8 +2,8 @@
 
 **A production-grade personal finance dashboard** built with the MERN stack. Track income and expenses, visualise spending patterns with interactive charts, set budgets with smart warnings, and automate recurring transactions — all in one clean, dark-themed interface.
 
-[![Backend CI](https://github.com/gupta-akshar/Expense-Tracker-Pro/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/gupta-akshar/Expense-Tracker-Pro/actions/workflows/backend-ci.yml)
-[![Frontend CI](https://github.com/gupta-akshar/Expense-Tracker-Pro/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/gupta-akshar/Expense-Tracker-Pro/actions/workflows/frontend-ci.yml)
+[![Backend CI](https://github.com/akshar-codes/ExpenseFlow/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/akshar-codes/ExpenseFlow/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/akshar-codes/ExpenseFlow/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/akshar-codes/ExpenseFlow/actions/workflows/frontend-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
