@@ -51,16 +51,12 @@ const LoginMarketingPanel = () => {
     <div className="flex flex-col h-full">
       {/* Logo + Brand */}
       <div className="left-stagger-1 flex items-center gap-3 mb-12">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{
-            background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-            boxShadow:
-              "0 4px 20px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-          }}
-        >
-          <img src={logo} alt="ExpenseTracker" className="w-6 h-6" />
-        </div>
+        <img
+          src={logo}
+          alt="ExpenseTracker"
+          className="w-10 h-10 rounded-xl shrink-0"
+          style={{ boxShadow: "0 4px 20px rgba(99,102,241,0.4)" }}
+        />
         <div>
           <p
             className="text-sm font-bold text-white leading-tight"
