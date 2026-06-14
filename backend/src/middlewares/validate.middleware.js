@@ -21,7 +21,8 @@ export const validate =
 
     // Write the transformed value back so controllers read clean data.
     if (source === "query") {
-      req.query = value;
+      Object.keys(req.query).forEach((key) => delete req.query[key]);
+      Object.assign(req.query, value);
       req.validatedQuery = value; // backward-compat alias
     } else {
       req.body = value;
