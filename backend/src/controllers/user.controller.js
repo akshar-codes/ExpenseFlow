@@ -5,40 +5,48 @@ import Transaction from "../models/Transaction.js";
 import Category from "../models/Category.js";
 import Budget from "../models/Budget.js";
 import RecurringTransaction from "../models/RecurringTransaction.js";
+import DeletionTombstone from "../models/DeletionTombstone.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
-// ─── Deletion tombstone schema ─────────────────────────────────────────────────
-const deletionTombstoneSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    unique: true,
-  },
-  requestedAt: { type: Date, default: Date.now },
-  status: {
-    type: String,
-    enum: ["pending", "completed"],
-    default: "pending",
-  },
-  completedAt: { type: Date },
-});
-
-const DeletionTombstone =
-  mongoose.models.DeletionTombstone ||
-  mongoose.model("DeletionTombstone", deletionTombstoneSchema);
-
-// ─── Sequential delete with tombstone ────────────────────────────────────────
+// ─── Transactional cascade delete ────────────────────────────────────────────
 
 const deleteUserData = async (userId) => {
-  await Transaction.deleteMany({ user: userId });
-  await Category.deleteMany({ user: userId });
-  await Budget.deleteMany({ user: userId });
-  await RecurringTransaction.deleteMany({ user: userId });
-  await User.findByIdAndDelete(userId);
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      await Transaction.deleteMany({ user: userId }, { session });
+      await Category.deleteMany({ user: userId }, { session });
+      await Budget.deleteMany({ user: userId }, { session });
+      await RecurringTransaction.deleteMany({ user: userId }, { session });
+      await User.findByIdAndDelete(userId, { session });
+    });
+  } catch (err) {
+    if (
+      err.codeName === "CommandNotSupportedOnStandalone" ||
+      err.message?.includes("Transaction numbers") ||
+      err.message?.includes("standalone")
+    ) {
+      console.warn(
+        "[deleteUserData] Transactions not available on this deployment — " +
+          "falling back to sequential deletes.  Consider using a replica set " +
+          "or Atlas for production.",
+      );
+      await Transaction.deleteMany({ user: userId });
+      await Category.deleteMany({ user: userId });
+      await Budget.deleteMany({ user: userId });
+      await RecurringTransaction.deleteMany({ user: userId });
+      await User.findByIdAndDelete(userId);
+    } else {
+      throw err;
+    }
+  } finally {
+    session.endSession();
+  }
 };
 
-// ─── CONTROLLERS ─────────────────────────────────────────────────────────────
+// ─── GET /users/profile ───────────────────────────────────────────────────────
 
 export const getUserProfile = async (req, res, next) => {
   try {
@@ -51,8 +59,11 @@ export const getUserProfile = async (req, res, next) => {
   }
 };
 
+// ─── PUT /users/profile ───────────────────────────────────────────────────────
+
 export const updateUserProfile = async (req, res, next) => {
   try {
+    // req.body is now Joi-validated and transformed (TD-001 fix in middleware)
     const { name, currency } = req.body;
 
     const user = await User.findById(req.user._id);
@@ -75,8 +86,11 @@ export const updateUserProfile = async (req, res, next) => {
   }
 };
 
+// ─── PUT /users/change-password ───────────────────────────────────────────────
+
 export const changePassword = async (req, res, next) => {
   try {
+    // req.body validated by changePasswordSchema (TD-001)
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -108,6 +122,8 @@ export const changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// ─── POST /users/close-account ────────────────────────────────────────────────
 
 export const deleteAccount = async (req, res, next) => {
   const { currentPassword } = req.body;

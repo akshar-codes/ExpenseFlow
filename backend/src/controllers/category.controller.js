@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Category from "../models/Category.js";
 import Budget from "../models/Budget.js";
 import RecurringTransaction from "../models/RecurringTransaction.js";
@@ -5,6 +6,8 @@ import RecurringTransaction from "../models/RecurringTransaction.js";
 const VALID_TYPES = ["income", "expense"];
 const MIN_NAME_LENGTH = 2;
 const MAX_NAME_LENGTH = 50;
+
+// ─── GET /api/categories ──────────────────────────────────────────────────────
 
 export const getCategories = async (req, res) => {
   try {
@@ -17,6 +20,8 @@ export const getCategories = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// ─── POST /api/categories ─────────────────────────────────────────────────────
 
 export const addCategory = async (req, res) => {
   let trimmedName;
@@ -65,7 +70,6 @@ export const addCategory = async (req, res) => {
     res.status(201).json(category);
   } catch (err) {
     if (err.code === 11000) {
-      // trimmedName and type are now accessible here (outer scope)
       return res.status(409).json({
         message: `A ${type} category named "${trimmedName}" already exists`,
       });
@@ -74,41 +78,74 @@ export const addCategory = async (req, res) => {
   }
 };
 
+// ─── DELETE /api/categories/:id ───────────────────────────────────────────────
+
 export const deleteCategory = async (req, res) => {
+  // First verify ownership outside the transaction — cheap read, no write.
+  const category = await Category.findOne({
+    _id: req.params.id,
+    user: req.user._id,
+  });
+
+  if (!category) {
+    return res.status(404).json({ message: "Category not found" });
+  }
+
+  let budgetsDeleted = 0;
+  let recurringDeactivated = 0;
+
+  const session = await mongoose.startSession();
+
   try {
-    const category = await Category.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user._id,
-    });
+    await session.withTransaction(async () => {
+      // 1. Delete the category itself.
+      await Category.findByIdAndDelete(category._id, { session });
 
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
-    }
+      // 2. Cascade: remove orphaned budgets.
+      const budgetResult = await Budget.deleteMany(
+        { category: category._id, user: req.user._id },
+        { session },
+      );
+      budgetsDeleted = budgetResult.deletedCount;
 
-    // Cascade: remove orphaned budgets
-    const budgetResult = await Budget.deleteMany({
-      category: category._id,
-      user: req.user._id,
-    });
-
-    // Cascade: deactivate orphaned recurring transactions
-    const recurringResult = await RecurringTransaction.updateMany(
-      {
-        category: category._id,
-        user: req.user._id,
-        isActive: true,
-      },
-      { $set: { isActive: false } },
-    );
-
-    res.json({
-      message: "Category deleted",
-      cascade: {
-        budgetsDeleted: budgetResult.deletedCount,
-        recurringDeactivated: recurringResult.modifiedCount,
-      },
+      // 3. Cascade: deactivate orphaned recurring transactions.
+      const recurringResult = await RecurringTransaction.updateMany(
+        { category: category._id, user: req.user._id, isActive: true },
+        { $set: { isActive: false } },
+        { session },
+      );
+      recurringDeactivated = recurringResult.modifiedCount;
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    // Replica-set transactions not available — fall back to sequential writes.
+    if (
+      err.codeName === "CommandNotSupportedOnStandalone" ||
+      err.message?.includes("Transaction numbers") ||
+      err.message?.includes("standalone")
+    ) {
+      // Re-delete (idempotent findOneAndDelete on primary key).
+      await Category.findByIdAndDelete(category._id);
+
+      const budgetResult = await Budget.deleteMany({
+        category: category._id,
+        user: req.user._id,
+      });
+      budgetsDeleted = budgetResult.deletedCount;
+
+      const recurringResult = await RecurringTransaction.updateMany(
+        { category: category._id, user: req.user._id, isActive: true },
+        { $set: { isActive: false } },
+      );
+      recurringDeactivated = recurringResult.modifiedCount;
+    } else {
+      return res.status(500).json({ message: err.message });
+    }
+  } finally {
+    session.endSession();
   }
+
+  res.json({
+    message: "Category deleted",
+    cascade: { budgetsDeleted, recurringDeactivated },
+  });
 };

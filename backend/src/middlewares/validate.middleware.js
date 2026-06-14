@@ -19,10 +19,13 @@ export const validate =
       });
     }
 
+    // Write the transformed value back so controllers read clean data.
     if (source === "query") {
-      req.validatedQuery = value;
+      req.query = value;
+      req.validatedQuery = value; // backward-compat alias
     } else {
-      req.validatedBody = value;
+      req.body = value;
+      req.validatedBody = value; // backward-compat alias
     }
 
     next();
