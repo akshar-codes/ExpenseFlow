@@ -16,6 +16,7 @@ import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Recurring from "./pages/Recurring";
+import Settings from "./pages/Settings";
 
 const LoadingScreen = () => (
   <div className="h-screen flex items-center justify-center bg-background text-primaryText text-lg font-medium">
@@ -105,6 +106,14 @@ function App() {
           element={
             <RouteErrorBoundary routeName="Recurring">
               <Recurring />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path={ROUTES.SETTINGS}
+          element={
+            <RouteErrorBoundary routeName="Settings">
+              <Settings />
             </RouteErrorBoundary>
           }
         />

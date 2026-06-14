@@ -7,4 +7,5 @@ export const ROUTES = Object.freeze({
   CATEGORIES: "/categories",
   REPORTS: "/reports",
   RECURRING: "/recurring",
+  SETTINGS: "/settings",
 });

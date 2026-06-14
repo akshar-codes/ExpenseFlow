@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { ROUTES } from "../constants/routes";
-import { useAuth } from "../hooks/useAuth";
+import { ROUTES } from "../../constants/routes";
+import { useAuth } from "../../hooks/useAuth";
 
 const NAV_ITEMS = [
   { to: ROUTES.DASHBOARD, label: "Dashboard", icon: "▦" },
@@ -9,12 +9,13 @@ const NAV_ITEMS = [
   { to: ROUTES.CATEGORIES, label: "Categories", icon: "◈" },
   { to: ROUTES.REPORTS, label: "Reports", icon: "◉" },
   { to: ROUTES.RECURRING, label: "Recurring", icon: "↺" },
+  { to: ROUTES.SETTINGS, label: "Settings", icon: "⚙" },
 ];
 
 const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
 
-// ── Logo — matches the login page branding exactly ─────────────────────────
+// ── Logo ───────────────────────────────────────────────────────────────────────
 
 const AppLogo = ({ collapsed = false, onClick }) => (
   <Link
@@ -29,7 +30,6 @@ const AppLogo = ({ collapsed = false, onClick }) => (
       alt="ExpenseTracker"
       className="w-8 h-8 shrink-0 transition-transform duration-300 group-hover:scale-105"
     />
-
     <div
       className="overflow-hidden transition-all duration-300 ease-in-out"
       style={{
@@ -43,7 +43,6 @@ const AppLogo = ({ collapsed = false, onClick }) => (
       >
         ExpenseTracker
       </h2>
-
       <p className="text-[10px] text-secondaryText mt-1 whitespace-nowrap">
         Personal Finance Platform
       </p>
@@ -51,7 +50,7 @@ const AppLogo = ({ collapsed = false, onClick }) => (
   </Link>
 );
 
-// ── Collapse toggle button ──────────────────────────────────────────────────
+// ── Collapse toggle ────────────────────────────────────────────────────────────
 
 const CollapseToggle = ({ collapsed, onClick }) => (
   <button
@@ -81,7 +80,7 @@ const CollapseToggle = ({ collapsed, onClick }) => (
   </button>
 );
 
-// ── Nav link ────────────────────────────────────────────────────────────────
+// ── Nav item ───────────────────────────────────────────────────────────────────
 
 const NavItem = ({ to, label, icon, collapsed, onClick }) => (
   <NavLink
@@ -89,22 +88,14 @@ const NavItem = ({ to, label, icon, collapsed, onClick }) => (
     onClick={onClick}
     title={collapsed ? label : undefined}
     className={({ isActive }) =>
-      `
-    flex items-center rounded-lg text-sm transition-all duration-150
-    hover:bg-[#1f1f23] hover:text-primaryText
-    focus:outline-none focus:ring-2 focus:ring-accent/40
-    ${collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-3 py-2"}
-    ${
-      isActive
-        ? "bg-[#1f1f23] text-primaryText font-medium"
-        : "text-secondaryText"
-    }
-  `
+      `flex items-center rounded-lg text-sm transition-all duration-150
+       hover:bg-[#1f1f23] hover:text-primaryText
+       focus:outline-none focus:ring-2 focus:ring-accent/40
+       ${collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-3 py-2"}
+       ${isActive ? "bg-[#1f1f23] text-primaryText font-medium" : "text-secondaryText"}`
     }
   >
-    <span className={`text-base leading-none shrink-0 ${collapsed ? "" : ""}`}>
-      {icon}
-    </span>{" "}
+    <span className="text-base leading-none shrink-0">{icon}</span>
     <span
       className="overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out"
       style={{
@@ -117,7 +108,7 @@ const NavItem = ({ to, label, icon, collapsed, onClick }) => (
   </NavLink>
 );
 
-// ── User footer ─────────────────────────────────────────────────────────────
+// ── User footer ────────────────────────────────────────────────────────────────
 
 const UserFooter = ({ user, onLogout, collapsed }) => (
   <div
@@ -188,7 +179,7 @@ const UserFooter = ({ user, onLogout, collapsed }) => (
   </div>
 );
 
-// ── Main Sidebar ─────────────────────────────────────────────────────────────
+// ── Main Sidebar ───────────────────────────────────────────────────────────────
 
 const Sidebar = ({ onCollapsedChange }) => {
   const [collapsed, setCollapsed] = useState(
@@ -202,13 +193,11 @@ const Sidebar = ({ onCollapsedChange }) => {
     setCollapsed((prev) => {
       const next = !prev;
       localStorage.setItem("sidebar-collapsed", String(next));
-      // Notify Layout so it can adjust margin
       onCollapsedChange?.(next);
       return next;
     });
   }, [onCollapsedChange]);
 
-  // Close mobile drawer on ESC
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") setMobileOpen(false);
@@ -217,7 +206,6 @@ const Sidebar = ({ onCollapsedChange }) => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Lock body scroll when mobile drawer is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
@@ -247,16 +235,10 @@ const Sidebar = ({ onCollapsedChange }) => {
       {/* Header */}
       <div
         className={`flex items-center px-3 py-4 border-b border-border shrink-0 min-h-[57px]
-  ${collapsed ? "justify-center" : "justify-between"}`}
+          ${collapsed ? "justify-center" : "justify-between"}`}
       >
         <AppLogo collapsed={collapsed} />
-        {!collapsed && (
-          <CollapseToggle collapsed={collapsed} onClick={toggleCollapse} />
-        )}
-
-        {collapsed && (
-          <CollapseToggle collapsed={collapsed} onClick={toggleCollapse} />
-        )}
+        <CollapseToggle collapsed={collapsed} onClick={toggleCollapse} />
       </div>
 
       {/* Navigation */}
@@ -278,10 +260,7 @@ const Sidebar = ({ onCollapsedChange }) => {
 
       {/* Version */}
       {!collapsed && (
-        <div
-          className="px-4 pb-3 transition-opacity duration-200"
-          style={{ opacity: collapsed ? 0 : 1 }}
-        >
+        <div className="px-4 pb-3">
           <p
             className="text-[10px] text-secondaryText/40"
             style={{ fontFamily: "'Sora', sans-serif" }}
@@ -295,7 +274,7 @@ const Sidebar = ({ onCollapsedChange }) => {
 
   return (
     <>
-      {/* ── Desktop: fixed sidebar ── */}
+      {/* Desktop: fixed sidebar */}
       <div
         className="hidden lg:block fixed left-0 top-0 z-20 h-screen"
         style={{
@@ -308,7 +287,7 @@ const Sidebar = ({ onCollapsedChange }) => {
         {sidebarContent}
       </div>
 
-      {/* ── Mobile: hamburger button ── */}
+      {/* Mobile: hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation menu"
@@ -324,7 +303,7 @@ const Sidebar = ({ onCollapsedChange }) => {
         </svg>
       </button>
 
-      {/* ── Mobile: backdrop ── */}
+      {/* Mobile: backdrop */}
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-sm"
@@ -333,7 +312,7 @@ const Sidebar = ({ onCollapsedChange }) => {
         />
       )}
 
-      {/* ── Mobile: drawer (always full width, no collapse) ── */}
+      {/* Mobile: drawer */}
       <div
         className={[
           "lg:hidden fixed left-0 top-0 z-40 h-screen",
@@ -342,7 +321,6 @@ const Sidebar = ({ onCollapsedChange }) => {
         ].join(" ")}
         style={{ width: "240px" }}
       >
-        {/* Force expanded on mobile */}
         <aside className="h-full bg-card border-r border-border flex flex-col overflow-hidden w-[240px]">
           <div className="flex items-center justify-between px-3 py-4 border-b border-border shrink-0">
             <AppLogo collapsed={false} onClick={() => setMobileOpen(false)} />
