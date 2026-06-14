@@ -7,20 +7,7 @@ import {
   updateTransaction,
 } from "../api/transactionApi";
 import { DEFAULT_FILTERS } from "../constants/transactionFilters";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const normalizeTransaction = (tx) => ({
-  ...tx,
-  categoryName:
-    typeof tx.category === "object" && tx.category !== null
-      ? tx.category.name
-      : tx.category || "Unknown",
-  categoryId:
-    typeof tx.category === "object" && tx.category !== null
-      ? tx.category._id
-      : tx.category,
-});
+import { normalizeTransaction } from "../utils/transactionUtils";
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -55,13 +42,12 @@ export const TransactionProvider = ({ children }) => {
           err?.name === "CanceledError" ||
           err?.code === "ERR_CANCELED"
         ) {
-          return; // Request was intentionally cancelled — not an error
+          return;
         }
         setError(
           err?.response?.data?.message || "Failed to load transactions.",
         );
       } finally {
-        // Only clear loading if this request was not aborted
         if (!signal?.aborted) {
           setLoading(false);
         }
@@ -104,7 +90,6 @@ export const TransactionProvider = ({ children }) => {
       const res = await createTransaction(tx);
       const newTx = res.transaction || res;
 
-      // Re-fetch to get server-sorted, server-paginated data
       const controller = new AbortController();
       await fetchTransactions(controller.signal);
 
@@ -121,9 +106,7 @@ export const TransactionProvider = ({ children }) => {
   const removeTransaction = useCallback(
     async (id) => {
       await deleteTransaction(id);
-      // Optimistic removal for immediate UI feedback
       setTransactions((prev) => prev.filter((t) => t._id !== id));
-      // Then re-fetch so pagination total is accurate
       const controller = new AbortController();
       await fetchTransactions(controller.signal);
     },
@@ -137,12 +120,10 @@ export const TransactionProvider = ({ children }) => {
       const updated = res.transaction || res;
       const normalized = normalizeTransaction(updated);
 
-      // Optimistic update for immediate UI feedback
       setTransactions((prev) =>
         prev.map((t) => (t._id === id ? normalized : t)),
       );
 
-      // Re-fetch to re-sort and re-paginate
       const controller = new AbortController();
       await fetchTransactions(controller.signal);
 

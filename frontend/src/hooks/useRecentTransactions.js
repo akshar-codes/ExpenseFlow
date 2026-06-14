@@ -1,17 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getTransactions } from "../api/transactionApi";
-
-const normalizeTransaction = (tx) => ({
-  ...tx,
-  categoryName:
-    typeof tx.category === "object" && tx.category !== null
-      ? tx.category.name
-      : (tx.category ?? "Unknown"),
-  categoryId:
-    typeof tx.category === "object" && tx.category !== null
-      ? tx.category._id
-      : tx.category,
-});
+import { normalizeTransaction } from "../utils/transactionUtils";
 
 const useRecentTransactions = (limit = 5) => {
   const [transactions, setTransactions] = useState([]);

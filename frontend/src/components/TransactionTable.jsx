@@ -1,26 +1,6 @@
 import React, { useState } from "react";
 import DeleteConfirm from "./DeleteConfirm";
-
-const formatDate = (date) => {
-  const d = new Date(date);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-
-  const dUTC = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
-  const todayUTC = `${today.getUTCFullYear()}-${today.getUTCMonth()}-${today.getUTCDate()}`;
-  const yesterdayUTC = `${yesterday.getUTCFullYear()}-${yesterday.getUTCMonth()}-${yesterday.getUTCDate()}`;
-
-  if (dUTC === todayUTC) return "Today";
-  if (dUTC === yesterdayUTC) return "Yesterday";
-
-  return d.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC", // FIX: display in UTC, consistent with how we store/query
-  });
-};
+import { formatTransactionDate } from "../utils/dateUtils";
 
 const TransactionTable = ({ transactions, onDelete, onEdit }) => {
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -113,7 +93,7 @@ const TransactionTable = ({ transactions, onDelete, onEdit }) => {
                     </td>
 
                     <td className="px-4 py-2.5 text-sm text-secondaryText whitespace-nowrap">
-                      {formatDate(tx.date)}
+                      {formatTransactionDate(tx.date)}
                     </td>
 
                     {(onDelete || onEdit) && (

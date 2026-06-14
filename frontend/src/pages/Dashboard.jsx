@@ -8,6 +8,7 @@ import { ExpensePieChart, IncomeExpenseBarChart } from "../components/Chart";
 import useDashboardAnalytics from "../hooks/useDashboardAnalytics";
 import useFonts from "../hooks/useFonts";
 import { ROUTES } from "../constants/routes.js";
+import { formatRecentDate } from "../utils/dateUtils";
 
 function greeting() {
   const h = new Date().getHours();
@@ -24,25 +25,6 @@ function todayLabel() {
     year: "numeric",
   });
 }
-
-const fmtDate = (d) => {
-  const date = new Date(d);
-  const today = new Date();
-  const yest = new Date();
-  yest.setUTCDate(today.getUTCDate() - 1);
-
-  const dStr = `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
-  const todayS = `${today.getUTCFullYear()}-${today.getUTCMonth()}-${today.getUTCDate()}`;
-  const yesterS = `${yest.getUTCFullYear()}-${yest.getUTCMonth()}-${yest.getUTCDate()}`;
-
-  if (dStr === todayS) return "Today";
-  if (dStr === yesterS) return "Yesterday";
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  });
-};
 
 const QABtn = ({ label, onClick, variant = "default", icon }) => {
   const styles = {
@@ -74,6 +56,7 @@ const RecentRow = ({ tx }) => {
     tx.categoryName ||
     (typeof tx.category === "object" ? tx.category?.name : null) ||
     "Unknown";
+
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-[#27272a]/50 last:border-0 group">
       <div className="flex items-center gap-3 min-w-0">
@@ -103,7 +86,7 @@ const RecentRow = ({ tx }) => {
           className="text-[11px] text-[#52525b]"
           style={{ fontFamily: "'Sora', sans-serif" }}
         >
-          {fmtDate(tx.date)}
+          {formatRecentDate(tx.date)}
         </span>
         <span
           className="text-sm font-semibold tabular-nums"
@@ -433,7 +416,10 @@ const Dashboard = () => {
               >
                 <span
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 border border-[#27272a] transition-colors duration-150 group-hover:border-[#3f3f46]"
-                  style={{ background: `${item.accent}15`, color: item.accent }}
+                  style={{
+                    background: `${item.accent}15`,
+                    color: item.accent,
+                  }}
                 >
                   {item.icon}
                 </span>
