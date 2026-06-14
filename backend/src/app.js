@@ -51,7 +51,9 @@ app.set("etag", false);
 app.set("trust proxy", 1);
 
 // ─── Helmet ───────────────────────────────────────────────────────────────────
+const isProd = process.env.NODE_ENV === "production";
 const clientOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+
 const clientHost = (() => {
   try {
     return new URL(clientOrigin).host;
@@ -59,6 +61,18 @@ const clientHost = (() => {
     return "localhost:5173";
   }
 })();
+
+const connectSrcDirectives = isProd
+  ? ["'self'", `https://${clientHost}`, `wss://${clientHost}`]
+  : [
+      "'self'",
+      `http://${clientHost}`,
+      `https://${clientHost}`,
+      `ws://${clientHost}`,
+      `wss://${clientHost}`,
+      "http://localhost:5000",
+      "https://localhost:5000",
+    ];
 
 app.use(
   helmet({
@@ -68,32 +82,21 @@ app.use(
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:"],
-        connectSrc: [
-          "'self'",
-          `http://${clientHost}`,
-          `https://${clientHost}`,
-          `ws://${clientHost}`,
-          `wss://${clientHost}`,
-          "http://localhost:5000",
-          "https://localhost:5000",
-        ],
+        connectSrc: connectSrcDirectives,
         fontSrc: [
           "'self'",
           "https://fonts.gstatic.com",
           "https://fonts.googleapis.com",
         ],
         frameAncestors: ["'none'"],
-        ...(process.env.NODE_ENV === "production"
-          ? { upgradeInsecureRequests: [] }
-          : {}),
+        ...(isProd ? { upgradeInsecureRequests: [] } : {}),
       },
     },
     frameguard: { action: "deny" },
     noSniff: true,
-    hsts:
-      process.env.NODE_ENV === "production"
-        ? { maxAge: 31_536_000, includeSubDomains: true, preload: true }
-        : false,
+    hsts: isProd
+      ? { maxAge: 31_536_000, includeSubDomains: true, preload: true }
+      : false,
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   }),
 );

@@ -2,10 +2,15 @@ import Transaction from "../models/Transaction.js";
 import Budget from "../models/Budget.js";
 import Category from "../models/Category.js";
 import mongoose from "mongoose";
+import {
+  getMonthDateRange,
+  getYearDateRange,
+  utcMonthYear,
+} from "../utils/dateUtils.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_AMOUNT = 1_000_000_000; // ₹1 billion hard cap prevents Infinity storage
+const MAX_AMOUNT = 1_000_000_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,18 +32,15 @@ const buildFilter = (userId, query) => {
       filter.date.$lte = end;
     }
   } else if (month && year) {
-    const m = Number(month);
-    const y = Number(year);
-    filter.date = {
-      $gte: new Date(Date.UTC(y, m - 1, 1)),
-      $lte: new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)),
-    };
+    // month and year are already Numbers thanks to Joi coercion (TD-001)
+    const { startDate: s, endDate: e } = getMonthDateRange(
+      Number(month),
+      Number(year),
+    );
+    filter.date = { $gte: s, $lte: e };
   } else if (year) {
-    const y = Number(year);
-    filter.date = {
-      $gte: new Date(Date.UTC(y, 0, 1)),
-      $lte: new Date(Date.UTC(y, 11, 31, 23, 59, 59, 999)),
-    };
+    const { startDate: s, endDate: e } = getYearDateRange(Number(year));
+    filter.date = { $gte: s, $lte: e };
   }
 
   return filter;
@@ -60,8 +62,10 @@ const buildSort = (sort) => {
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
+
 export const createTransaction = async (req, res, next) => {
   try {
+    // req.body is Joi-validated + type-coerced (TD-001 fix)
     const { type, amount, category, note, date, paymentMethod } = req.body;
 
     if (!type || !amount || !category || !date)
@@ -87,15 +91,12 @@ export const createTransaction = async (req, res, next) => {
         .status(400)
         .json({ message: "Category not found or does not belong to you" });
 
-    // ── Budget warning ────────────────────────────────────────────────────────
+    // ── Budget warning ────────────────────────────────────────────────────
     let budgetWarning = false;
     let warningMessage = "";
 
     if (type === "expense") {
-      const d = new Date(date);
-
-      const month = d.getUTCMonth() + 1;
-      const year = d.getUTCFullYear();
+      const { month, year } = utcMonthYear(new Date(date));
 
       const budget = await Budget.findOne({
         user: req.user._id,
@@ -105,8 +106,7 @@ export const createTransaction = async (req, res, next) => {
       });
 
       if (budget) {
-        const startDate = new Date(Date.UTC(year, month - 1, 1));
-        const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+        const { startDate, endDate } = getMonthDateRange(month, year);
 
         const [agg] = await Transaction.aggregate([
           {
@@ -152,6 +152,7 @@ export const createTransaction = async (req, res, next) => {
 };
 
 // ─── GET ──────────────────────────────────────────────────────────────────────
+
 export const getTransactions = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -176,8 +177,12 @@ export const getTransactions = async (req, res, next) => {
               as: "category",
             },
           },
-          { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-          { $match: { $or: [{ "category.name": regex }, { note: regex }] } },
+          {
+            $unwind: { path: "$category", preserveNullAndEmptyArrays: true },
+          },
+          {
+            $match: { $or: [{ "category.name": regex }, { note: regex }] },
+          },
           {
             $facet: {
               metadata: [{ $count: "total" }],
@@ -265,7 +270,12 @@ export const getTransactions = async (req, res, next) => {
 
     return res.status(200).json({
       transactions,
-      pagination: { total, page, pages: Math.ceil(total / limit) || 0, limit },
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit) || 0,
+        limit,
+      },
     });
   } catch (error) {
     next(error);
@@ -273,6 +283,7 @@ export const getTransactions = async (req, res, next) => {
 };
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
+
 export const updateTransaction = async (req, res, next) => {
   try {
     const transaction = await Transaction.findOne({
@@ -329,6 +340,7 @@ export const updateTransaction = async (req, res, next) => {
 };
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────
+
 export const deleteTransaction = async (req, res, next) => {
   try {
     const transaction = await Transaction.findOneAndDelete({

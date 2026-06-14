@@ -9,7 +9,7 @@ import Category from "../models/Category.js";
 const jobLockSchema = new mongoose.Schema({
   job: { type: String, required: true, unique: true },
   lockedAt: { type: Date, required: true, default: Date.now },
-  lockedBy: { type: String }, // hostname/pid for debugging
+  lockedBy: { type: String },
 });
 
 jobLockSchema.index({ lockedAt: 1 }, { expireAfterSeconds: 600 });
@@ -18,7 +18,7 @@ const JobLock =
   mongoose.models.JobLock || mongoose.model("JobLock", jobLockSchema);
 
 const LOCK_NAME = "recurring_cron";
-const LOCK_TTL_MS = 9 * 60 * 1000; // 9 minutes (slightly under the TTL index)
+const LOCK_TTL_MS = 9 * 60 * 1000; // 9 min — safely under the 10-min TTL index
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,23 +56,18 @@ const acquireLock = async () => {
   const staleThreshold = new Date(Date.now() - LOCK_TTL_MS);
 
   try {
-    // Atomic upsert: only succeeds if the lock doesn't exist OR is stale
     await JobLock.findOneAndUpdate(
       {
         job: LOCK_NAME,
-        $or: [
-          { lockedAt: { $lt: staleThreshold } }, // stale lock
-          { job: { $exists: false } }, // no lock at all (for upsert)
-        ],
+        lockedAt: { $lt: staleThreshold }, // only stale locks can be stolen
       },
       { $set: { lockedAt: new Date(), lockedBy } },
       { upsert: true },
     );
     return true;
   } catch (err) {
-    // Duplicate key error (E11000) means another instance holds the lock
+    // E11000: a fresh (non-stale) lock document already exists for this job
     if (err.code === 11000) return false;
-    // Unexpected error — don't run the job
     console.error("[recurring-job] Lock acquisition error:", err.message);
     return false;
   }
@@ -91,7 +86,7 @@ const releaseLock = async () => {
 
 // ─── Main job logic ───────────────────────────────────────────────────────────
 
-const BATCH_SIZE = 200; // process at most 200 items per cron tick
+const BATCH_SIZE = 200;
 
 const runJob = async () => {
   const acquired = await acquireLock();
@@ -122,6 +117,7 @@ const runJob = async () => {
       return;
     }
 
+    // Batch category existence check — single query instead of N queries
     const categoryIds = [...new Set(items.map((i) => String(i.category)))];
     const validCategories = await Category.find({
       _id: { $in: categoryIds },
@@ -130,7 +126,7 @@ const runJob = async () => {
       .lean();
     const validCategorySet = new Set(validCategories.map((c) => String(c._id)));
 
-    // FIX: batch existence check — single query instead of N queries
+    // Batch idempotency check — single query instead of N queries
     const existingTxs = await Transaction.find({
       sourceRecurringId: { $in: items.map((i) => i._id) },
       date: { $gte: today, $lt: tomorrow },
@@ -180,7 +176,7 @@ const runJob = async () => {
         continue;
       }
 
-      // FIX: skip if category was deleted (prevents orphaned transactions)
+      // ── Category existence check ─────────────────────────────────────────
       if (!validCategorySet.has(String(item.category))) {
         console.warn(
           `  ⚠ Skipping "${item.title}" — category ${item.category} no longer exists. Deactivating.`,
@@ -190,7 +186,7 @@ const runJob = async () => {
         continue;
       }
 
-      // ── Idempotency check (from batch query above, not per-item) ─────────
+      // ── Idempotency check (from batch query) ─────────────────────────────
       if (alreadyPostedIds.has(String(item._id))) {
         bulkOps.push({
           updateOne: {
@@ -204,7 +200,7 @@ const runJob = async () => {
         continue;
       }
 
-      // Queue the new transaction
+      // Queue new transaction
       newTransactions.push({
         user: item.user,
         type: item.type,
@@ -224,7 +220,7 @@ const runJob = async () => {
       });
     }
 
-    // ── Deactivate expired/orphaned items ────────────────────────────────
+    // ── Deactivate expired / orphaned items ──────────────────────────────
     if (deactivateIds.length > 0) {
       await RecurringTransaction.updateMany(
         { _id: { $in: deactivateIds } },
@@ -232,7 +228,7 @@ const runJob = async () => {
       );
     }
 
-    //    key errors are caught per-document not globally) ──────────────────
+    // ── Insert new transactions (ordered: false — duplicates blocked by index)
     if (newTransactions.length > 0) {
       try {
         const insertResult = await Transaction.insertMany(newTransactions, {
@@ -241,7 +237,6 @@ const runJob = async () => {
         processed = insertResult.length;
         console.log(`  ✓ Inserted ${processed} transactions`);
       } catch (err) {
-        // ordered:false: err.insertedDocs contains the ones that succeeded
         const inserted = err.insertedDocs?.length ?? 0;
         const duplicates =
           err.writeErrors?.filter((e) => e.code === 11000).length ?? 0;

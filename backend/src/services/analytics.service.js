@@ -3,11 +3,15 @@ import Transaction from "../models/Transaction.js";
 
 const QUERY_TIMEOUT_MS = 10_000;
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const getMonthDateRange = (month, year) => {
   const startDate = new Date(Date.UTC(year, month - 1, 1));
   const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
   return { startDate, endDate };
 };
+
+// ─── Monthly Summary ──────────────────────────────────────────────────────────
 
 export const getMonthlySummaryService = async (userId, month, year) => {
   const { startDate, endDate } = getMonthDateRange(month, year);
@@ -49,6 +53,8 @@ export const getMonthlySummaryService = async (userId, month, year) => {
     balance: Math.round((income - expense) * 100) / 100,
   };
 };
+
+// ─── Category Breakdown ───────────────────────────────────────────────────────
 
 export const getCategoryBreakdownService = async (
   userId,
@@ -114,6 +120,8 @@ export const getCategoryBreakdownService = async (
   ).hint({ user: 1, type: 1, date: -1 });
 };
 
+// ─── Overview ─────────────────────────────────────────────────────────────────
+
 export const getOverviewService = async (userId) => {
   const result = await Transaction.aggregate(
     [
@@ -158,6 +166,8 @@ export const getOverviewService = async (userId) => {
   };
 };
 
+// ─── Monthly Trend ────────────────────────────────────────────────────────────
+
 export const getMonthlyTrendService = async (userId, year) => {
   const startDate = new Date(Date.UTC(year, 0, 1));
   const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
@@ -173,7 +183,8 @@ export const getMonthlyTrendService = async (userId, year) => {
       {
         $group: {
           _id: {
-            month: { $month: "$date" },
+            // UTC-safe month extraction — unaffected by server timezone
+            month: { $month: { date: "$date", timezone: "UTC" } },
             type: "$type",
           },
           total: { $sum: "$amount" },
