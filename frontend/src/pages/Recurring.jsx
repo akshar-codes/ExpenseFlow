@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import {
-  getRecurringTransactions,
-  addRecurringTransaction,
-  updateRecurringTransaction,
-  deleteRecurringTransaction,
-  toggleRecurringTransaction,
-} from "../api/recurringApi";
 import useCategories from "../hooks/useCategories";
+import useRecurring from "../hooks/useRecurring";
 import useFonts from "../hooks/useFonts";
 import { TYPE_COLORS } from "../constants/colors";
 
@@ -584,10 +578,18 @@ const RecurringRow = ({
 const RecurringTransactions = () => {
   useFonts();
 
-  const [items, setItems] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [toggling, setToggling] = useState(null);
+  const {
+    items,
+    loading: pageLoading,
+    saving,
+    toggling,
+    error: apiError,
+    setError: setApiError,
+    addItem,
+    updateItem,
+    deleteItem,
+    toggleItem,
+  } = useRecurring();
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -595,31 +597,8 @@ const RecurringTransactions = () => {
   const [filterFreq, setFilterFreq] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [apiError, setApiError] = useState("");
 
   const { categories } = useCategories();
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const data = await getRecurringTransactions();
-        if (!cancelled) setItems(data);
-      } catch (err) {
-        if (!cancelled)
-          setApiError(
-            err?.response?.data?.message ||
-              "Failed to load recurring transactions.",
-          );
-      } finally {
-        if (!cancelled) setPageLoading(false);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -654,72 +633,31 @@ const RecurringTransactions = () => {
   }, [items]);
 
   const handleSave = async (formData) => {
-    setSaving(true);
-    setApiError("");
     try {
       if (editTarget) {
-        const updated = await updateRecurringTransaction(
-          editTarget._id,
-          formData,
-        );
-        setItems((prev) =>
-          prev.map((i) => (i._id === editTarget._id ? updated : i)),
-        );
+        await updateItem(editTarget._id, formData);
         setEditTarget(null);
       } else {
-        const added = await addRecurringTransaction(formData);
-        setItems((prev) => [added, ...prev]);
+        await addItem(formData);
       }
       setShowForm(false);
-    } catch (err) {
-      setApiError(
-        err?.response?.data?.message || "Failed to save. Please try again.",
-      );
-    } finally {
-      setSaving(false);
+    } catch {
+      // apiError is already set by the hook
     }
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
-      await deleteRecurringTransaction(deleteTarget._id);
-      setItems((prev) => prev.filter((i) => i._id !== deleteTarget._id));
-    } catch (err) {
-      setApiError(err?.response?.data?.message || "Failed to delete.");
+      await deleteItem(deleteTarget._id);
+    } catch {
+      // apiError is already set by the hook
     } finally {
       setDeleteTarget(null);
     }
   };
 
-  const handleToggle = async (id, currentIsActive) => {
-    const nextIsActive = !currentIsActive;
-    // Optimistic update
-    setItems((prev) =>
-      prev.map((i) => (i._id === id ? { ...i, isActive: nextIsActive } : i)),
-    );
-    setToggling(id);
-    try {
-      const serverDoc = await toggleRecurringTransaction(id, nextIsActive);
-      setItems((prev) =>
-        prev.map((i) =>
-          i._id === id
-            ? { ...i, isActive: serverDoc.isActive ?? nextIsActive }
-            : i,
-        ),
-      );
-    } catch {
-      // Revert on failure
-      setItems((prev) =>
-        prev.map((i) =>
-          i._id === id ? { ...i, isActive: currentIsActive } : i,
-        ),
-      );
-      setApiError("Failed to update status. Please try again.");
-    } finally {
-      setToggling(null);
-    }
-  };
+  const handleToggle = (id, currentIsActive) => toggleItem(id, currentIsActive);
 
   const handleEdit = (item) => {
     setEditTarget(item);
