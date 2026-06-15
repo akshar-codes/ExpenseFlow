@@ -436,10 +436,6 @@ const Settings = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleProfileUpdate = (updatedUser) => {
-    navigate(ROUTES_SETTINGS_REDIRECT);
-  };
-
   const handleDeleted = async () => {
     await logout();
   };
@@ -478,12 +474,7 @@ const Settings = () => {
         </div>
 
         {/* Profile */}
-        <ProfileSection
-          user={user}
-          onUpdate={() => {
-            navigate(0); // force reload of current route
-          }}
-        />
+        <ProfileSection user={user} onUpdate={() => navigate(0)} />
 
         {/* Password */}
         <PasswordSection />
@@ -494,7 +485,5 @@ const Settings = () => {
     </div>
   );
 };
-
-const ROUTES_SETTINGS_REDIRECT = "/settings";
 
 export default Settings;

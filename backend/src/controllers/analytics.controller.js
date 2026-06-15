@@ -9,17 +9,9 @@ import {
 // @access  Private
 export const getMonthlySummary = async (req, res, next) => {
   try {
-    const { month, year } = req.query;
+    const { month, year } = req.query; // already validated + coerced to numbers
 
-    if (!month || !year) {
-      return res.status(400).json({ message: "Month and year required" });
-    }
-
-    const data = await getMonthlySummaryService(
-      req.user._id,
-      Number(month),
-      Number(year),
-    );
+    const data = await getMonthlySummaryService(req.user._id, month, year);
 
     res.status(200).json(data);
   } catch (error) {
@@ -31,17 +23,13 @@ export const getMonthlySummary = async (req, res, next) => {
 // @access  Private
 export const getCategoryBreakdown = async (req, res, next) => {
   try {
-    const { type, month, year } = req.query;
-
-    if (!type) {
-      return res.status(400).json({ message: "Transaction type required" });
-    }
+    const { type, month, year } = req.query; // already validated + coerced
 
     const data = await getCategoryBreakdownService(
       req.user._id,
       type,
-      month ? Number(month) : null,
-      year ? Number(year) : null,
+      month ?? null,
+      year ?? null,
     );
 
     res.status(200).json(data);
@@ -65,13 +53,9 @@ export const getOverview = async (req, res, next) => {
 // @access  Private
 export const getMonthlyTrend = async (req, res, next) => {
   try {
-    const { year } = req.query;
+    const { year } = req.query; // already validated + coerced to number
 
-    if (!year) {
-      return res.status(400).json({ message: "Year required" });
-    }
-
-    const data = await getMonthlyTrendService(req.user._id, Number(year));
+    const data = await getMonthlyTrendService(req.user._id, year);
 
     res.status(200).json(data);
   } catch (error) {

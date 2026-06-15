@@ -1,15 +1,8 @@
 import mongoose from "mongoose";
 import Transaction from "../models/Transaction.js";
+import { getMonthDateRange, getYearDateRange } from "../utils/dateUtils.js";
 
 const QUERY_TIMEOUT_MS = 10_000;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const getMonthDateRange = (month, year) => {
-  const startDate = new Date(Date.UTC(year, month - 1, 1));
-  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-  return { startDate, endDate };
-};
 
 // ─── Monthly Summary ──────────────────────────────────────────────────────────
 
@@ -68,20 +61,11 @@ export const getCategoryBreakdownService = async (
   };
 
   if (month && year) {
-    const numMonth = Number(month);
-    const numYear = Number(year);
-    if (!isFinite(numMonth) || !isFinite(numYear)) {
-      return [];
-    }
-    const { startDate, endDate } = getMonthDateRange(numMonth, numYear);
+    const { startDate, endDate } = getMonthDateRange(month, year);
     matchStage.date = { $gte: startDate, $lte: endDate };
   } else if (year) {
-    const numYear = Number(year);
-    if (!isFinite(numYear)) return [];
-    matchStage.date = {
-      $gte: new Date(Date.UTC(numYear, 0, 1)),
-      $lte: new Date(Date.UTC(numYear, 11, 31, 23, 59, 59, 999)),
-    };
+    const { startDate, endDate } = getYearDateRange(year);
+    matchStage.date = { $gte: startDate, $lte: endDate };
   }
 
   return await Transaction.aggregate(
@@ -169,8 +153,7 @@ export const getOverviewService = async (userId) => {
 // ─── Monthly Trend ────────────────────────────────────────────────────────────
 
 export const getMonthlyTrendService = async (userId, year) => {
-  const startDate = new Date(Date.UTC(year, 0, 1));
-  const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+  const { startDate, endDate } = getYearDateRange(year);
 
   return await Transaction.aggregate(
     [
@@ -183,7 +166,6 @@ export const getMonthlyTrendService = async (userId, year) => {
       {
         $group: {
           _id: {
-            // UTC-safe month extraction — unaffected by server timezone
             month: { $month: { date: "$date", timezone: "UTC" } },
             type: "$type",
           },
