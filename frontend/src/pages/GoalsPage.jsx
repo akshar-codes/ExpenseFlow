@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  Plus,
-  Target,
-  Search,
-  Filter,
-  RefreshCw,
-  X,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+
+import AddIcon from "@mui/icons-material/Add";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CloseIcon from "@mui/icons-material/Close";
+import ErrorOutlinedIcon from "@mui/icons-material/ErrorOutlined";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+
 import { useGoals } from "../hooks/useGoals";
 import { GoalCard } from "../components/goals/GoalCard";
 import { GoalFormDialog } from "../components/goals/GoalFormDialog";
@@ -131,7 +131,7 @@ export function GoalsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Target size={24} className="text-indigo-500" />
+              <TrackChangesIcon fontSize="medium" className="text-indigo-500" />
               Financial Goals
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -142,7 +142,7 @@ export function GoalsPage() {
             onClick={openCreate}
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
           >
-            <Plus size={16} />
+            <AddIcon fontSize="small" />
             New Goal
           </button>
         </div>
@@ -154,11 +154,11 @@ export function GoalsPage() {
             role="alert"
           >
             <div className="flex items-center gap-2">
-              <AlertCircle size={16} className="flex-shrink-0" />
+              <ErrorOutlinedIcon fontSize="small" className="flex-shrink-0" />
               {error}
             </div>
             <button onClick={clearError} aria-label="Dismiss error">
-              <X size={14} />
+              <CloseIcon fontSize="small" />
             </button>
           </div>
         )}
@@ -196,7 +196,7 @@ export function GoalsPage() {
               className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${showFilters || hasActiveFilters ? "bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-700 dark:text-indigo-300" : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               aria-expanded={showFilters}
             >
-              <Filter size={14} />
+              <FilterListIcon fontSize="small" />
               Filters
               {hasActiveFilters && (
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
@@ -231,7 +231,7 @@ export function GoalsPage() {
                 onClick={resetFilters}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <RefreshCw size={13} /> Reset
+                <RefreshIcon fontSize="small" /> Reset
               </button>
             )}
           </div>
@@ -326,7 +326,7 @@ export function GoalsPage() {
                 onClick={openCreate}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
               >
-                <Plus size={16} /> Create Goal
+                <AddIcon fontSize="small" /> Create Goal
               </button>
             )}
           </div>
@@ -359,7 +359,7 @@ export function GoalsPage() {
                 className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label="Previous page"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeftIcon fontSize="small" />
               </button>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 Page {pagination.page} of {pagination.totalPages}
@@ -370,7 +370,7 @@ export function GoalsPage() {
                 className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label="Next page"
               >
-                <ChevronRight size={16} />
+                <ChevronRightIcon fontSize="small" />
               </button>
             </div>
           </div>

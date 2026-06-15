@@ -8,4 +8,5 @@ export const ROUTES = Object.freeze({
   REPORTS: "/reports",
   RECURRING: "/recurring",
   SETTINGS: "/settings",
+  GOALS: "/goals",
 });

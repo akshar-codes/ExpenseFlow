@@ -2,14 +2,50 @@ import { useState, useEffect, useCallback } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 
 const NAV_ITEMS = [
-  { to: ROUTES.DASHBOARD, label: "Dashboard", icon: "▦" },
-  { to: ROUTES.TRANSACTIONS, label: "Transactions", icon: "↕" },
-  { to: ROUTES.CATEGORIES, label: "Categories", icon: "◈" },
-  { to: ROUTES.REPORTS, label: "Reports", icon: "◉" },
-  { to: ROUTES.RECURRING, label: "Recurring", icon: "↺" },
-  { to: ROUTES.SETTINGS, label: "Settings", icon: "⚙" },
+  {
+    to: ROUTES.DASHBOARD,
+    label: "Dashboard",
+    icon: <DashboardOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.TRANSACTIONS,
+    label: "Transactions",
+    icon: <SwapHorizOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.CATEGORIES,
+    label: "Categories",
+    icon: <CategoryOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.REPORTS,
+    label: "Reports",
+    icon: <BarChartOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.RECURRING,
+    label: "Recurring",
+    icon: <AutorenewOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.GOALS,
+    label: "Goals",
+    icon: <TrackChangesIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.SETTINGS,
+    label: "Settings",
+    icon: <SettingsOutlinedIcon fontSize="small" />,
+  },
 ];
 
 const SIDEBAR_WIDTH = 240;

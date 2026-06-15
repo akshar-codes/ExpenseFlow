@@ -1,15 +1,13 @@
 import React from "react";
-import {
-  X,
-  Target,
-  Calendar,
-  TrendingUp,
-  DollarSign,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Pencil,
-} from "lucide-react";
+import CloseIcon from "@mui/icons-material/Close";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import EditIcon from "@mui/icons-material/Edit";
 import { GoalProgressBar } from "./GoalProgressBar";
 
 function formatCurrency(amount) {
@@ -41,7 +39,7 @@ function StatCard({ icon: Icon, label, value, subValue, accent }) {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
-        <Icon size={15} className={accent || "text-gray-400"} />
+        <Icon sx={{ fontSize: 15 }} className={accent || "text-gray-400"} />
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           {label}
         </span>
@@ -95,7 +93,12 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
               className="w-12 h-12 rounded-2xl flex items-center justify-center"
               style={{ backgroundColor: goal.color }}
             >
-              <Target size={22} className="text-white" />
+              <TrackChangesIcon
+                sx={{
+                  fontSize: 22,
+                  color: "#fff",
+                }}
+              />
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -103,14 +106,14 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
                 onClick={() => onEdit?.(goal)}
                 aria-label="Edit goal"
               >
-                <Pencil size={15} />
+                <EditIcon sx={{ fontSize: 15 }} />
               </button>
               <button
                 className="p-1.5 rounded-lg bg-white/70 dark:bg-gray-800/70 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
                 onClick={onClose}
                 aria-label="Close"
               >
-                <X size={15} />
+                <CloseIcon sx={{ fontSize: 15 }} />
               </button>
             </div>
           </div>
@@ -140,7 +143,7 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
             )}
             {goal.isOverdue && (
               <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700">
-                <AlertTriangle size={10} /> Overdue
+                <WarningAmberIcon sx={{ fontSize: 10 }} /> Overdue
               </span>
             )}
           </div>
@@ -174,28 +177,28 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
           {/* Stat grid */}
           <div className="grid grid-cols-2 gap-3">
             <StatCard
-              icon={DollarSign}
+              icon={AttachMoneyIcon}
               label="Saved"
               value={formatCurrency(goal.currentAmount)}
               subValue={`of ${formatCurrency(goal.targetAmount)}`}
               accent="text-green-500"
             />
             <StatCard
-              icon={TrendingUp}
+              icon={TrendingUpIcon}
               label="Remaining"
               value={formatCurrency(goal.remainingAmount)}
               subValue="to reach goal"
               accent="text-indigo-500"
             />
             <StatCard
-              icon={Calendar}
+              icon={CalendarTodayIcon}
               label="Target Date"
               value={formatDate(goal.targetDate)}
               subValue={daysInfo()}
               accent={goal.isOverdue ? "text-red-500" : "text-blue-500"}
             />
             <StatCard
-              icon={Clock}
+              icon={ScheduleIcon}
               label="Priority"
               value={
                 goal.priority
@@ -211,7 +214,10 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
           {/* Completion info */}
           {goal.status === "completed" && goal.completedAt && (
             <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-              <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
+              <CheckCircleIcon
+                sx={{ fontSize: 20 }}
+                className="text-green-500 flex-shrink-0"
+              />
               <div>
                 <p className="text-sm font-semibold text-green-800 dark:text-green-300">
                   Goal Achieved!

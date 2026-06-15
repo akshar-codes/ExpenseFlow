@@ -17,6 +17,7 @@ import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Recurring from "./pages/Recurring";
 import Settings from "./pages/Settings";
+import { GoalsPage } from "./pages/GoalsPage";
 
 const LoadingScreen = () => (
   <div className="h-screen flex items-center justify-center bg-background text-primaryText text-lg font-medium">
@@ -105,6 +106,14 @@ function App() {
           path={ROUTES.RECURRING}
           element={
             <RouteErrorBoundary routeName="Recurring">
+              <Recurring />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path={ROUTES.GOALS}
+          element={
+            <RouteErrorBoundary routeName="Goals">
               <Recurring />
             </RouteErrorBoundary>
           }

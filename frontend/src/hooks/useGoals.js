@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { useAuth } from "../contexts/AuthContext"; // existing context
+import { useAuth } from "./useAuth"; // existing context
 
 const BASE_URL = "/api/goals";
 

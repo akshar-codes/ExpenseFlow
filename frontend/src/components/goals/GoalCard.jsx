@@ -1,57 +1,39 @@
 import React from "react";
 import { GoalProgressBar } from "./GoalProgressBar";
-import {
-  Target,
-  TrendingUp,
-  Calendar,
-  AlertTriangle,
-  CheckCircle,
-  PauseCircle,
-  XCircle,
-  MoreVertical,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
+import CancelIcon from "@mui/icons-material/Cancel";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
 const STATUS_CONFIG = {
   active: {
     label: "Active",
-    icon: TrendingUp,
+    icon: TrendingUpIcon,
     className:
       "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   },
   completed: {
     label: "Completed",
-    icon: CheckCircle,
+    icon: CheckCircleIcon,
     className:
       "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   },
   paused: {
     label: "Paused",
-    icon: PauseCircle,
+    icon: PauseCircleFilledIcon,
     className:
       "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
   },
   cancelled: {
     label: "Cancelled",
-    icon: XCircle,
+    icon: CancelIcon,
     className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  },
-};
-
-const PRIORITY_CONFIG = {
-  high: {
-    label: "High",
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  },
-  medium: {
-    label: "Medium",
-    className:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-  },
-  low: {
-    label: "Low",
-    className: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
   },
 };
 
@@ -105,7 +87,12 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
             }}
             aria-hidden="true"
           >
-            <Target size={18} style={{ color: goal.color }} />
+            <TrackChangesIcon
+              sx={{
+                fontSize: 18,
+                color: goal.color,
+              }}
+            />
           </div>
           <div className="min-w-0">
             <button
@@ -130,7 +117,7 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Goal actions"
           >
-            <MoreVertical size={16} />
+            <MoreVertIcon sx={{ fontSize: 16 }} />
           </button>
           {menuOpen && (
             <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
@@ -141,7 +128,7 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
                   onEdit?.(goal);
                 }}
               >
-                <Pencil size={14} /> Edit
+                <EditIcon sx={{ fontSize: 14 }} /> Edit
               </button>
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-lg"
@@ -150,7 +137,7 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
                   onDelete?.(goal);
                 }}
               >
-                <Trash2 size={14} /> Delete
+                <DeleteOutlinedIcon sx={{ fontSize: 14 }} /> Delete
               </button>
             </div>
           )}
@@ -162,7 +149,7 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
         <span
           className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.className}`}
         >
-          <StatusIcon size={11} />
+          <StatusIcon sx={{ fontSize: 11 }} />
           {statusCfg.label}
         </span>
         <span
@@ -172,7 +159,7 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
         </span>
         {goal.isOverdue && (
           <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-            <AlertTriangle size={11} /> Overdue
+            <WarningAmberIcon sx={{ fontSize: 11 }} /> Overdue
           </span>
         )}
       </div>
@@ -202,7 +189,7 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
       {/* Footer */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-          <Calendar size={12} />
+          <CalendarTodayIcon sx={{ fontSize: 12 }} />
           <span>{formatDate(goal.targetDate)}</span>
         </div>
         {goal.status === "active" && (

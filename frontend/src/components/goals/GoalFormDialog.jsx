@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Target } from "lucide-react";
+import CloseIcon from "@mui/icons-material/Close";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 
 const PRIORITIES = ["low", "medium", "high"];
 const STATUSES = ["active", "paused", "cancelled"];
@@ -178,7 +179,12 @@ export function GoalFormDialog({
               className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ backgroundColor: `${form.color}20` }}
             >
-              <Target size={18} style={{ color: form.color }} />
+              <TrackChangesIcon
+                sx={{
+                  fontSize: 18,
+                  color: form.color,
+                }}
+              />
             </div>
             <h2
               id="goal-dialog-title"
@@ -192,7 +198,7 @@ export function GoalFormDialog({
             onClick={onClose}
             aria-label="Close dialog"
           >
-            <X size={18} />
+            <CloseIcon sx={{ fontSize: 18 }} />
           </button>
         </div>
 

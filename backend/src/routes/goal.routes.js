@@ -1,6 +1,6 @@
 import express from "express";
 
-import { authenticate } from "../middleware/auth.js";
+import { protect } from "../middlewares/auth.middleware.js";
 import {
   validateCreateGoal,
   validateUpdateGoal,
@@ -20,7 +20,7 @@ import {
 const router = express.Router();
 
 // All goal routes require authentication
-router.use(authenticate);
+router.use(protect);
 
 // ── Static sub-routes before :id ──────────────────────────────────────────────
 
