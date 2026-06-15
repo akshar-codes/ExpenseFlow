@@ -7,13 +7,7 @@ const VALID_TYPES = ["income", "expense"];
 const MIN_NAME_LENGTH = 2;
 const MAX_NAME_LENGTH = 50;
 
-export class ServiceError extends Error {
-  constructor(message, statusCode = 500) {
-    super(message);
-    this.name = "ServiceError";
-    this.statusCode = statusCode;
-  }
-}
+export { ServiceError } from "../utils/ServiceError.js";
 
 // ─── LIST ─────────────────────────────────────────────────────────────────────
 
