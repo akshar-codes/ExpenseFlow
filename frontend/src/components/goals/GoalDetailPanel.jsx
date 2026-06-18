@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
@@ -8,7 +8,14 @@ import ScheduleIcon from "@mui/icons-material/Schedule";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import EditIcon from "@mui/icons-material/Edit";
-import { GoalProgressBar } from "./GoalProgressBar";
+import AddIcon from "@mui/icons-material/Add";
+import HistoryIcon from "@mui/icons-material/History";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import { AnimatedGoalProgressBar } from "./AnimatedGoalProgressBar";
+import ContributionModal from "./ContributionModal";
+import ContributionHistory from "./ContributionHistory";
+import GoalTimeline from "./GoalTimeline";
+import { useContributions } from "../../hooks/useContributions";
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat("en-US", {
@@ -54,7 +61,65 @@ function StatCard({ icon: Icon, label, value, subValue, accent }) {
   );
 }
 
-export function GoalDetailPanel({ goal, onClose, onEdit }) {
+const TABS = [
+  { value: "history", label: "History", icon: HistoryIcon },
+  { value: "timeline", label: "Timeline", icon: TimelineIcon },
+];
+
+/**
+ * GoalDetailPanel
+ *
+ * Existing modal preserved: header, status badges, stat grid, completion
+ * info, created/updated footer. Added:
+ *  - "Add contribution" button in the header actions
+ *  - Tabbed History / Timeline section below the progress bar
+ *  - Live-updating progress bar (AnimatedGoalProgressBar) and goal stats
+ *    whenever a contribution is added or undone, without closing the panel.
+ */
+export function GoalDetailPanel({ goal: initialGoal, onClose, onEdit }) {
+  const [goal, setGoal] = useState(initialGoal);
+  const [showContributionModal, setShowContributionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("history");
+
+  useEffect(() => setGoal(initialGoal), [initialGoal]);
+
+  const {
+    contributions,
+    pagination,
+    loading,
+    undoingId,
+    error,
+    fetchHistory,
+    addManual,
+    linkTransaction,
+    undo,
+  } = useContributions(goal?._id);
+
+  useEffect(() => {
+    if (goal?._id) fetchHistory({ page: 1, includeUndone: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goal?._id]);
+
+  const handleLoadMore = useCallback(() => {
+    const nextPage = (pagination?.page ?? 1) + 1;
+    fetchHistory({ page: nextPage, includeUndone: true });
+  }, [pagination, fetchHistory]);
+
+  const handleAddContribution = async (payload) => {
+    const result = await addManual(payload);
+    setGoal(result.goal);
+  };
+
+  const handleLinkTransaction = async (payload) => {
+    const result = await linkTransaction(payload);
+    setGoal(result.goal);
+  };
+
+  const handleUndo = async (contributionId) => {
+    const result = await undo(contributionId);
+    setGoal(result.goal);
+  };
+
   if (!goal) return null;
 
   const statusColorClass = STATUS_COLORS[goal.status] ?? STATUS_COLORS.active;
@@ -66,6 +131,10 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
     if (goal.daysRemaining === 0) return "Due today";
     return `${goal.daysRemaining} days remaining`;
   };
+
+  // Only non-undone contributions feed the running-total timeline; the
+  // history tab shows everything (including undone, for the audit trail).
+  const activeContributions = contributions.filter((c) => !c.isUndone);
 
   return (
     <div
@@ -166,13 +235,25 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
                 {goal.progressPercentage?.toFixed(1)}%
               </span>
             </div>
-            <GoalProgressBar
+            <AnimatedGoalProgressBar
               percentage={goal.progressPercentage}
               color={goal.color}
               showLabel={false}
               size="lg"
             />
           </div>
+
+          {/* Add contribution CTA */}
+          {goal.status !== "cancelled" && (
+            <button
+              onClick={() => setShowContributionModal(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+              style={{ backgroundColor: goal.color }}
+            >
+              <AddIcon sx={{ fontSize: 16 }} />
+              Add Contribution
+            </button>
+          )}
 
           {/* Stat grid */}
           <div className="grid grid-cols-2 gap-3">
@@ -229,6 +310,53 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
             </div>
           )}
 
+          {/* Contributions: History / Timeline tabs */}
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-1 mb-3">
+              {TABS.map((tab) => {
+                const TabIcon = tab.icon;
+                const active = activeTab === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      active
+                        ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <TabIcon sx={{ fontSize: 13 }} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {error && (
+              <p className="text-xs text-red-500 mb-2" role="alert">
+                {error}
+              </p>
+            )}
+
+            {activeTab === "history" ? (
+              <ContributionHistory
+                contributions={contributions}
+                loading={loading}
+                pagination={pagination}
+                onLoadMore={handleLoadMore}
+                onUndo={handleUndo}
+                undoingId={undoingId}
+              />
+            ) : (
+              <GoalTimeline
+                contributions={activeContributions}
+                targetAmount={goal.targetAmount}
+                color={goal.color}
+              />
+            )}
+          </div>
+
           {/* Created / updated */}
           <div className="text-xs text-gray-400 dark:text-gray-500 space-y-0.5">
             <p>Created: {formatDate(goal.createdAt)}</p>
@@ -238,6 +366,15 @@ export function GoalDetailPanel({ goal, onClose, onEdit }) {
           </div>
         </div>
       </div>
+
+      {showContributionModal && (
+        <ContributionModal
+          goal={goal}
+          onClose={() => setShowContributionModal(false)}
+          onAdd={handleAddContribution}
+          onLink={handleLinkTransaction}
+        />
+      )}
     </div>
   );
 }
