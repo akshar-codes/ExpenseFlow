@@ -114,7 +114,7 @@ function App() {
           path={ROUTES.GOALS}
           element={
             <RouteErrorBoundary routeName="Goals">
-              <Recurring />
+              <GoalsPage />
             </RouteErrorBoundary>
           }
         />
