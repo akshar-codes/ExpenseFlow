@@ -5,7 +5,10 @@ import { useAuth } from "../hooks/useAuth";
 import TransactionModal from "../components/TransactionModal";
 import SummaryCard from "../components/SummaryCard";
 import { ExpensePieChart, IncomeExpenseBarChart } from "../components/Chart";
+import { MonthlySavingsChart } from "../components/goals/MonthlySavingsChart";
+import RecentContributions from "../components/goals/RecentContributions";
 import useDashboardAnalytics from "../hooks/useDashboardAnalytics";
+import useSavingsDashboard from "../hooks/useSavingsDashboard";
 import useFonts from "../hooks/useFonts";
 import { ROUTES } from "../constants/routes.js";
 import { formatRecentDate } from "../utils/dateUtils";
@@ -151,6 +154,14 @@ const Dashboard = () => {
     refresh: refreshAnalytics,
   } = useDashboardAnalytics();
 
+  const {
+    recentContributions,
+    monthlyChart,
+    loading: savingsLoading,
+    error: savingsError,
+    refresh: refreshSavings,
+  } = useSavingsDashboard(currentYear);
+
   const [modalMode, setModalMode] = useState(null);
 
   const handleModalClose = () => {
@@ -225,6 +236,11 @@ const Dashboard = () => {
               icon="↺"
               label="Recurring"
               onClick={() => navigate(ROUTES.RECURRING)}
+            />
+            <QABtn
+              icon="◎"
+              label="Goals"
+              onClick={() => navigate(ROUTES.GOALS)}
             />
             <QABtn
               icon="→"
@@ -375,6 +391,24 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Savings: monthly chart + recent contributions */}
+        <div>
+          <SectionLabel>Savings — {currentYear}</SectionLabel>
+          {savingsError && (
+            <AnalyticsError message={savingsError} onRetry={refreshSavings} />
+          )}
+          <div className="grid lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2">
+              <MonthlySavingsChart data={monthlyChart} year={currentYear} />
+            </div>
+            <RecentContributions
+              contributions={recentContributions}
+              loading={savingsLoading}
+              onAddClick={() => navigate(ROUTES.GOALS)}
+            />
+          </div>
+        </div>
+
         {/* Quick access */}
         <div>
           <SectionLabel>Quick access</SectionLabel>
@@ -403,6 +437,12 @@ const Dashboard = () => {
                 label: "Recurring",
                 to: ROUTES.RECURRING,
                 accent: "#facc15",
+              },
+              {
+                icon: "◎",
+                label: "Goals",
+                to: ROUTES.GOALS,
+                accent: "#f472b6",
               },
             ].map((item) => (
               <button
