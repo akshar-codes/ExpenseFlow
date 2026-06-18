@@ -17,10 +17,16 @@ import {
   deleteGoal,
 } from "../controllers/goal.controller.js";
 
+import contributionRouter from "./contribution.routes.js";
+
 const router = express.Router();
 
 // All goal routes require authentication
 router.use(protect);
+
+// ── Aggregate contribution routes (static, must come before :id) ──────────────
+// Mounts GET /api/goals/contributions/monthly and /recent
+router.use("/contributions", contributionRouter);
 
 // ── Static sub-routes before :id ──────────────────────────────────────────────
 
@@ -37,5 +43,13 @@ router.post("/", validateCreateGoal, createGoal);
 router.get("/:id", getGoal);
 router.put("/:id", validateUpdateGoal, updateGoal);
 router.delete("/:id", deleteGoal);
+
+// ── Per-goal contribution sub-routes ─────────────────────────────────────────
+// POST   /api/goals/:goalId/contributions
+// POST   /api/goals/:goalId/contributions/link
+// GET    /api/goals/:goalId/contributions
+// DELETE /api/goals/:goalId/contributions/:id
+
+router.use("/:goalId/contributions", contributionRouter);
 
 export default router;
