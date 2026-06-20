@@ -75,6 +75,8 @@ const listGoalsSchema = Joi.object({
 
 // ── Middleware factory ─────────────────────────────────────────────────────────
 
+// REPLACE the validate function at the bottom of the file
+
 function validate(schema, source = "body") {
   return (req, res, next) => {
     const { error, value } = schema.validate(req[source], {
@@ -95,11 +97,17 @@ function validate(schema, source = "body") {
       });
     }
 
-    req[source] = value;
+    if (source === "query") {
+      // Express 5: req.query is getter-only — direct assignment throws
+      Object.keys(req.query).forEach((key) => delete req.query[key]);
+      Object.assign(req.query, value);
+    } else {
+      req[source] = value;
+    }
+
     next();
   };
 }
-
 export const validateCreateGoal = validate(createGoalSchema, "body");
 export const validateUpdateGoal = validate(updateGoalSchema, "body");
 export const validateListGoals = validate(listGoalsSchema, "query");

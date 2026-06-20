@@ -21,9 +21,25 @@ export const validate =
 
     // Write the transformed value back so controllers read clean data.
     if (source === "query") {
-      Object.keys(req.query).forEach((key) => delete req.query[key]);
-      Object.assign(req.query, value);
-      req.validatedQuery = value; // backward-compat alias
+      req.validatedQuery = value; // backward-compat alias always set
+
+      const existingKeys = Object.keys(req.query);
+      for (const key of existingKeys) {
+        if (!(key in value)) {
+          try {
+            delete req.query[key];
+          } catch {
+            // Some environments disallow deletion; ignore silently
+          }
+        }
+      }
+      for (const [key, val] of Object.entries(value)) {
+        try {
+          req.query[key] = val;
+        } catch {
+          // If setter is unavailable, validatedQuery is the fallback
+        }
+      }
     } else {
       req.body = value;
       req.validatedBody = value; // backward-compat alias

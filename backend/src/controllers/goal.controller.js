@@ -4,7 +4,10 @@ import * as goalService from "../services/goal.service.js";
 
 export const listGoals = async (req, res, next) => {
   try {
-    const result = await goalService.getGoals(req.user.id, req.query);
+    // req.validatedQuery is set by the validate middleware (Joi-coerced values).
+    // Fall back to req.query for backward compatibility.
+    const params = req.validatedQuery ?? req.query;
+    const result = await goalService.getGoals(req.user.id, params);
 
     res.json({
       success: true,

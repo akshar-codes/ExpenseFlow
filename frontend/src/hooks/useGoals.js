@@ -1,15 +1,12 @@
+// frontend/src/hooks/useGoals.js
 import { useState, useCallback, useRef } from "react";
-import { useAuth } from "./useAuth"; // existing context
-
-const BASE_URL = "/api/goals";
+import API from "../api/axios";
 
 /**
  * Centralized Goals API hook.
- * Follows the same pattern as useTransactions / useBudgets.
+ * Uses the shared axios instance (auth headers + token refresh handled automatically).
  */
 export function useGoals() {
-  const { token } = useAuth();
-
   const [goals, setGoals] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -17,150 +14,85 @@ export function useGoals() {
 
   const abortRef = useRef(null);
 
-  function authHeaders() {
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
   // ── Fetch list ──────────────────────────────────────────────────────────────
 
-  const fetchGoals = useCallback(
-    async (params = {}) => {
-      if (abortRef.current) abortRef.current.abort();
-      abortRef.current = new AbortController();
+  const fetchGoals = useCallback(async (params = {}) => {
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
 
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      const query = new URLSearchParams(
-        Object.fromEntries(
-          Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
-        ),
-      ).toString();
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
+    );
 
-      try {
-        const res = await fetch(`${BASE_URL}${query ? `?${query}` : ""}`, {
-          headers: authHeaders(),
-          signal: abortRef.current.signal,
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to fetch goals");
-
-        setGoals(data.data);
-        setPagination(data.pagination);
-        return data;
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        setError(err.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [token],
-  );
+    try {
+      const res = await API.get("/goals", {
+        params: cleanParams,
+        signal: abortRef.current.signal,
+      });
+      setGoals(res.data.data);
+      setPagination(res.data.pagination);
+      return res.data;
+    } catch (err) {
+      if (err?.name === "CanceledError" || err?.name === "AbortError") return;
+      const msg =
+        err?.response?.data?.error || err?.message || "Failed to fetch goals";
+      setError(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // ── Create ──────────────────────────────────────────────────────────────────
 
-  const createGoal = useCallback(
-    async (payload) => {
-      setError(null);
-      const res = await fetch(BASE_URL, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data.details
-          ? data.details.map((d) => d.message).join(", ")
-          : data.error;
-        throw new Error(msg || "Failed to create goal");
-      }
-      setGoals((prev) => [data.data, ...prev]);
-      return data.data;
-    },
-    [token],
-  );
+  const createGoal = useCallback(async (payload) => {
+    setError(null);
+    const res = await API.post("/goals", payload);
+    setGoals((prev) => [res.data.data, ...prev]);
+    return res.data.data;
+  }, []);
 
   // ── Update ──────────────────────────────────────────────────────────────────
 
-  const updateGoal = useCallback(
-    async (id, payload) => {
-      setError(null);
-      const res = await fetch(`${BASE_URL}/${id}`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data.details
-          ? data.details.map((d) => d.message).join(", ")
-          : data.error;
-        throw new Error(msg || "Failed to update goal");
-      }
-      setGoals((prev) => prev.map((g) => (g._id === id ? data.data : g)));
-      return data.data;
-    },
-    [token],
-  );
+  const updateGoal = useCallback(async (id, payload) => {
+    setError(null);
+    const res = await API.put(`/goals/${id}`, payload);
+    setGoals((prev) => prev.map((g) => (g._id === id ? res.data.data : g)));
+    return res.data.data;
+  }, []);
 
   // ── Delete ──────────────────────────────────────────────────────────────────
 
-  const deleteGoal = useCallback(
-    async (id) => {
-      setError(null);
-      const res = await fetch(`${BASE_URL}/${id}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete goal");
-
-      setGoals((prev) => prev.filter((g) => g._id !== id));
-      return data;
-    },
-    [token],
-  );
+  const deleteGoal = useCallback(async (id) => {
+    setError(null);
+    const res = await API.delete(`/goals/${id}`);
+    setGoals((prev) => prev.filter((g) => g._id !== id));
+    return res.data;
+  }, []);
 
   // ── Single goal ─────────────────────────────────────────────────────────────
 
-  const fetchGoalById = useCallback(
-    async (id) => {
-      const res = await fetch(`${BASE_URL}/${id}`, {
-        headers: authHeaders(),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Goal not found");
-      return data.data;
-    },
-    [token],
-  );
+  const fetchGoalById = useCallback(async (id) => {
+    const res = await API.get(`/goals/${id}`);
+    return res.data.data;
+  }, []);
 
   // ── Statistics ──────────────────────────────────────────────────────────────
 
   const fetchStatistics = useCallback(async () => {
-    const res = await fetch(`${BASE_URL}/statistics`, {
-      headers: authHeaders(),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to fetch statistics");
-    return data.data;
-  }, [token]);
+    const res = await API.get("/goals/statistics");
+    return res.data.data;
+  }, []);
 
   // ── Dashboard ───────────────────────────────────────────────────────────────
 
   const fetchDashboard = useCallback(async () => {
-    const res = await fetch(`${BASE_URL}/dashboard`, {
-      headers: authHeaders(),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to fetch dashboard");
-    return data.data;
-  }, [token]);
+    const res = await API.get("/goals/dashboard");
+    return res.data.data;
+  }, []);
 
   return {
     goals,

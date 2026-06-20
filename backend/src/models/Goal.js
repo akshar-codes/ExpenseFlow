@@ -122,7 +122,7 @@ goalSchema.index({ user: 1, createdAt: -1 });
 
 // ── Pre-save hook: auto-complete when currentAmount >= targetAmount ────────────
 
-goalSchema.pre("save", function (next) {
+goalSchema.pre("save", async function () {
   if (
     this.currentAmount >= this.targetAmount &&
     this.status === GOAL_STATUS.ACTIVE
@@ -141,8 +141,6 @@ goalSchema.pre("save", function (next) {
     this.status = GOAL_STATUS.ACTIVE;
     this.completedAt = null;
   }
-
-  next();
 });
 
 export const Goal = mongoose.model("Goal", goalSchema);

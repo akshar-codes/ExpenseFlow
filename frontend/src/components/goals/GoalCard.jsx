@@ -1,54 +1,52 @@
 import React from "react";
 import { GoalProgressBar } from "./GoalProgressBar";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
-import CancelIcon from "@mui/icons-material/Cancel";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
 const STATUS_CONFIG = {
   active: {
     label: "Active",
-    icon: TrendingUpIcon,
-    className:
-      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    color: "#4ade80",
+    bg: "rgba(74,222,128,0.10)",
+    border: "rgba(74,222,128,0.25)",
   },
   completed: {
     label: "Completed",
-    icon: CheckCircleIcon,
-    className:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+    color: "#4ade80",
+    bg: "rgba(74,222,128,0.10)",
+    border: "rgba(74,222,128,0.25)",
   },
   paused: {
     label: "Paused",
-    icon: PauseCircleFilledIcon,
-    className:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+    color: "#facc15",
+    bg: "rgba(250,204,21,0.10)",
+    border: "rgba(250,204,21,0.25)",
   },
   cancelled: {
     label: "Cancelled",
-    icon: CancelIcon,
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+    color: "#f87171",
+    bg: "rgba(248,113,113,0.10)",
+    border: "rgba(248,113,113,0.25)",
   },
 };
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("en-US", {
+const PRIORITY_CONFIG = {
+  high: { label: "High priority", color: "#f87171" },
+  medium: { label: "Medium priority", color: "#facc15" },
+  low: { label: "Low priority", color: "#4ade80" },
+};
+
+const inrFmt = (v) =>
+  new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     minimumFractionDigits: 0,
-  }).format(amount);
-}
+    maximumFractionDigits: 0,
+  }).format(v ?? 0);
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-IN", {
     day: "numeric",
+    month: "short",
     year: "numeric",
   });
 }
@@ -59,7 +57,6 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
 
   const statusCfg = STATUS_CONFIG[goal.status] ?? STATUS_CONFIG.active;
   const priorityCfg = PRIORITY_CONFIG[goal.priority] ?? PRIORITY_CONFIG.medium;
-  const StatusIcon = statusCfg.icon;
 
   React.useEffect(() => {
     function handleClickOutside(e) {
@@ -73,139 +70,232 @@ export function GoalCard({ goal, onEdit, onDelete, onViewDetails }) {
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow"
+      className="relative rounded-xl border border-[#27272a] overflow-hidden group transition-all duration-200 hover:border-[#3f3f46]"
+      style={{
+        background: "linear-gradient(145deg, #18181b 0%, #141416 100%)",
+        fontFamily: "'Sora', sans-serif",
+      }}
       data-testid="goal-card"
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{
-              backgroundColor: `${goal.color}20`,
-              border: `2px solid ${goal.color}`,
-            }}
-            aria-hidden="true"
-          >
-            <TrackChangesIcon
-              sx={{
-                fontSize: 18,
-                color: goal.color,
-              }}
-            />
-          </div>
-          <div className="min-w-0">
+      {/* Goal-color left accent */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px]"
+        style={{ background: goal.color ?? "#6366f1" }}
+      />
+
+      {/* Hover glow */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse at top left, ${goal.color ?? "#6366f1"}18 0%, transparent 65%)`,
+        }}
+      />
+
+      <div className="pl-5 pr-4 pt-4 pb-4 relative">
+        {/* Header row */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="min-w-0 flex-1 pr-2">
             <button
-              className="text-base font-semibold text-gray-900 dark:text-white hover:underline text-left truncate block max-w-[180px]"
+              className="text-sm font-semibold text-[#e4e4e7] hover:text-white transition-colors text-left truncate block max-w-full focus:outline-none"
               onClick={() => onViewDetails?.(goal)}
               aria-label={`View details for ${goal.title}`}
             >
               {goal.title}
             </button>
             {goal.category && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-[11px] text-[#52525b] mt-0.5 truncate">
                 {goal.category}
-              </span>
+              </p>
+            )}
+          </div>
+
+          {/* Action menu */}
+          <div className="relative shrink-0" ref={menuRef}>
+            <button
+              className="w-7 h-7 flex items-center justify-center rounded-md text-[#52525b] hover:text-[#a1a1aa] hover:bg-[#27272a] transition-all focus:outline-none"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Goal actions"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="currentColor"
+              >
+                <circle cx="7" cy="2.5" r="1.2" />
+                <circle cx="7" cy="7" r="1.2" />
+                <circle cx="7" cy="11.5" r="1.2" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 mt-1 w-36 rounded-xl border border-[#27272a] z-20 overflow-hidden"
+                style={{
+                  background: "#18181b",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                }}
+              >
+                <button
+                  className="flex items-center gap-2 w-full px-3 py-2.5 text-[12px] text-[#a1a1aa] hover:text-[#e4e4e7] hover:bg-[#27272a] transition-colors"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onEdit?.(goal);
+                  }}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit
+                </button>
+                <div className="h-px bg-[#27272a]" />
+                <button
+                  className="flex items-center gap-2 w-full px-3 py-2.5 text-[12px] text-[#f87171]/70 hover:text-[#f87171] hover:bg-[#f87171]/8 transition-colors"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDelete?.(goal);
+                  }}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4h6v2" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Action menu */}
-        <div className="relative flex-shrink-0" ref={menuRef}>
-          <button
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Goal actions"
+        {/* Status + Priority badges */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+            style={{
+              color: statusCfg.color,
+              background: statusCfg.bg,
+              borderColor: statusCfg.border,
+            }}
           >
-            <MoreVertIcon sx={{ fontSize: 16 }} />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
-              <button
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit?.(goal);
-                }}
-              >
-                <EditIcon sx={{ fontSize: 14 }} /> Edit
-              </button>
-              <button
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-lg"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDelete?.(goal);
-                }}
-              >
-                <DeleteOutlinedIcon sx={{ fontSize: 14 }} /> Delete
-              </button>
-            </div>
+            {statusCfg.label}
+          </span>
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+            style={{
+              color: priorityCfg.color,
+              background: `${priorityCfg.color}12`,
+              borderColor: `${priorityCfg.color}30`,
+            }}
+          >
+            {priorityCfg.label}
+          </span>
+          {goal.isOverdue && (
+            <span
+              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+              style={{
+                color: "#f87171",
+                background: "rgba(248,113,113,0.10)",
+                borderColor: "rgba(248,113,113,0.25)",
+              }}
+            >
+              Overdue
+            </span>
           )}
         </div>
-      </div>
 
-      {/* Status + Priority badges */}
-      <div className="flex items-center gap-2 mb-4">
-        <span
-          className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.className}`}
-        >
-          <StatusIcon sx={{ fontSize: 11 }} />
-          {statusCfg.label}
-        </span>
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full ${priorityCfg.className}`}
-        >
-          {priorityCfg.label} priority
-        </span>
-        {goal.isOverdue && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-            <WarningAmberIcon sx={{ fontSize: 11 }} /> Overdue
-          </span>
-        )}
-      </div>
+        {/* Progress bar */}
+        <GoalProgressBar
+          percentage={goal.progressPercentage}
+          color={goal.color}
+          showLabel={false}
+          size="md"
+        />
 
-      {/* Progress */}
-      <GoalProgressBar
-        percentage={goal.progressPercentage}
-        color={goal.color}
-      />
-
-      {/* Amounts */}
-      <div className="flex justify-between mt-3 mb-1">
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Saved</p>
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-            {formatCurrency(goal.currentAmount)}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Goal</p>
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-            {formatCurrency(goal.targetAmount)}
-          </p>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-          <CalendarTodayIcon sx={{ fontSize: 12 }} />
-          <span>{formatDate(goal.targetDate)}</span>
-        </div>
-        {goal.status === "active" && (
+        {/* Progress label */}
+        <div className="flex items-center justify-between mt-1.5 mb-3">
           <span
-            className={`text-xs font-medium ${goal.daysRemaining < 30 ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
+            className="text-[11px] text-[#52525b] tabular-nums"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
           >
-            {goal.daysRemaining > 0
-              ? `${goal.daysRemaining}d left`
-              : "Past due"}
+            {goal.progressPercentage?.toFixed(1)}%
           </span>
-        )}
-        {goal.status === "completed" && goal.completedAt && (
-          <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-            Done {formatDate(goal.completedAt)}
-          </span>
-        )}
+          {goal.progressPercentage >= 100 && (
+            <span className="text-[11px] font-semibold text-[#4ade80]">
+              Completed ✓
+            </span>
+          )}
+        </div>
+
+        {/* Amount row */}
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-[10px] text-[#52525b] uppercase tracking-wider mb-0.5">
+              Saved
+            </p>
+            <p
+              className="text-sm font-semibold tabular-nums text-[#e4e4e7]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {inrFmt(goal.currentAmount)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-[#52525b] uppercase tracking-wider mb-0.5">
+              Goal
+            </p>
+            <p
+              className="text-sm font-semibold tabular-nums text-[#a1a1aa]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {inrFmt(goal.targetAmount)}
+            </p>
+          </div>
+        </div>
+
+        {/* Footer row */}
+        <div className="flex items-center justify-between pt-3 border-t border-[#27272a]/60">
+          <p className="text-[11px] text-[#52525b]">
+            {formatDate(goal.targetDate)}
+          </p>
+          {goal.status === "active" && (
+            <span
+              className="text-[11px] font-semibold tabular-nums"
+              style={{
+                color: goal.daysRemaining < 30 ? "#f87171" : "#71717a",
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              {goal.daysRemaining > 0
+                ? `${goal.daysRemaining}d left`
+                : "Past due"}
+            </span>
+          )}
+          {goal.status === "completed" && goal.completedAt && (
+            <span className="text-[11px] font-semibold text-[#4ade80]">
+              Done ✓
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
