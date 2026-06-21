@@ -35,3 +35,62 @@ export const trendSchema = Joi.object({
     "number.max": "Year must be <= 2100",
   }),
 });
+
+// ════════════════════════════════════════════════════════════════════════
+// NEW SCHEMAS — Phase 1
+// ════════════════════════════════════════════════════════════════════════
+
+// Validator for /analytics/rolling (generic, arbitrary window size)
+export const rollingCustomSchema = Joi.object({
+  months: Joi.number().integer().min(1).max(24).required().messages({
+    "any.required": "months is required",
+    "number.base": "months must be a number",
+    "number.min": "months must be at least 1",
+    "number.max": "months cannot exceed 24",
+  }),
+});
+
+// Validator for /analytics/yoy
+export const yearOverYearSchema = Joi.object({
+  year: Joi.number().integer().min(2000).max(2100).required().messages({
+    "any.required": "year is required",
+    "number.base": "year must be a number",
+    "number.min": "year must be >= 2000",
+    "number.max": "year must be <= 2100",
+  }),
+});
+
+// Validator for /analytics/compare-months
+const monthYearPair = (prefix) => ({
+  [`${prefix}Month`]: Joi.number().integer().min(1).max(12),
+  [`${prefix}Year`]: Joi.number().integer().min(2000).max(2100),
+});
+
+export const monthComparisonSchema = Joi.object({
+  ...monthYearPair("current"),
+  ...monthYearPair("prior"),
+})
+  .and("currentMonth", "currentYear")
+  .and("priorMonth", "priorYear")
+  .messages({
+    "object.and":
+      "currentMonth/currentYear must be provided together, and priorMonth/priorYear must be provided together",
+  });
+
+// Validator for /analytics/weekly
+export const weeklyTrendsSchema = Joi.object({
+  weeks: Joi.number().integer().min(1).max(52).default(12).messages({
+    "number.base": "weeks must be a number",
+    "number.min": "weeks must be at least 1",
+    "number.max": "weeks cannot exceed 52",
+  }),
+});
+
+// Validator for /analytics/daily
+export const dailySpendingSchema = Joi.object({
+  days: Joi.number().integer().min(1).max(90).default(30).messages({
+    "number.base": "days must be a number",
+    "number.min": "days must be at least 1",
+    "number.max": "days cannot exceed 90",
+  }),
+});
