@@ -34,6 +34,21 @@ const transactionSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ── Merchant (added for Phase 1 of the analytics build-out) ───────────
+
+    merchant: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: null,
+    },
+
+    normalizedMerchant: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
     date: {
       type: Date,
       default: Date.now,
@@ -59,7 +74,32 @@ const transactionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// ─── Indexes ──────────────────────────────────────────────────────────────────
+// ─── Derive normalizedMerchant whenever merchant changes ──────────────────
+
+const normalize = (value) =>
+  typeof value === "string" && value.trim().length > 0
+    ? value.trim().toLowerCase().replace(/\s+/g, " ")
+    : null;
+
+transactionSchema.pre("save", function (next) {
+  if (this.isModified("merchant")) {
+    this.normalizedMerchant = normalize(this.merchant);
+  }
+  next();
+});
+
+transactionSchema.pre(["findOneAndUpdate", "updateOne"], function (next) {
+  const update = this.getUpdate();
+  const setOps = update.$set ?? update;
+  if (Object.prototype.hasOwnProperty.call(setOps, "merchant")) {
+    setOps.normalizedMerchant = normalize(setOps.merchant);
+    if (update.$set) update.$set = setOps;
+    this.setUpdate(update);
+  }
+  next();
+});
+
+// ─── Indexes (existing, unchanged) ─────────────────────────────────────────
 
 // Primary query: user + date (list / sort by date)
 transactionSchema.index({ user: 1, date: -1 });
@@ -88,6 +128,16 @@ transactionSchema.index(
     partialFilterExpression: { sourceRecurringId: { $type: "objectId" } },
     name: "recurring_idempotency_idx",
   },
+);
+
+transactionSchema.index(
+  { user: 1, normalizedMerchant: 1, date: -1 },
+  { name: "user_merchant_date_idx", sparse: true },
+);
+
+transactionSchema.index(
+  { user: 1, type: 1, date: -1, amount: -1 },
+  { name: "user_type_date_amount_idx" },
 );
 
 export default mongoose.model("Transaction", transactionSchema);
