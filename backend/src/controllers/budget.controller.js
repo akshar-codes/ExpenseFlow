@@ -5,11 +5,13 @@ import {
   deleteBudgetService,
 } from "../services/budget.service.js";
 import { ServiceError } from "../utils/ServiceError.js";
+import cache from "../utils/cache.js";
 
 // @route   POST /api/budgets
 export const setBudget = async (req, res, next) => {
   try {
     const budget = await setBudgetService(req.user._id, req.body);
+    cache.invalidateUser(req.user._id);
     res.status(200).json(budget);
   } catch (error) {
     if (error instanceof ServiceError) {
@@ -36,6 +38,7 @@ export const getBudgetStatus = async (req, res, next) => {
 export const deleteBudget = async (req, res, next) => {
   try {
     await deleteBudgetService(req.user._id, req.params.id);
+    cache.invalidateUser(req.user._id);
     res.status(200).json({ message: "Budget deleted successfully" });
   } catch (error) {
     if (error instanceof ServiceError) {

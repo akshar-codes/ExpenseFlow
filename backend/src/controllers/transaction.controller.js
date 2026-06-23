@@ -5,11 +5,13 @@ import {
   deleteTransactionService,
 } from "../services/transaction.service.js";
 import { ServiceError } from "../utils/ServiceError.js";
+import cache from "../utils/cache.js";
 
 // @route   POST /api/transactions
 export const createTransaction = async (req, res, next) => {
   try {
     const result = await createTransactionService(req.user._id, req.body);
+    cache.invalidateUser(req.user._id);
     res.status(201).json(result);
   } catch (error) {
     if (error instanceof ServiceError) {
@@ -37,6 +39,7 @@ export const updateTransaction = async (req, res, next) => {
       req.params.id,
       req.body,
     );
+    cache.invalidateUser(req.user._id);
     res.status(200).json({ transaction: updated });
   } catch (error) {
     if (error instanceof ServiceError) {
@@ -50,6 +53,7 @@ export const updateTransaction = async (req, res, next) => {
 export const deleteTransaction = async (req, res, next) => {
   try {
     await deleteTransactionService(req.user._id, req.params.id);
+    cache.invalidateUser(req.user._id);
     res.status(200).json({ message: "Transaction deleted" });
   } catch (error) {
     if (error instanceof ServiceError) {
