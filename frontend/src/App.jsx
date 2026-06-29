@@ -103,6 +103,14 @@ function App() {
           }
         />
         <Route
+          path={ROUTES.INSIGHTS}
+          element={
+            <RouteErrorBoundary routeName="Insights">
+              <Insights />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
           path={ROUTES.RECURRING}
           element={
             <RouteErrorBoundary routeName="Recurring">

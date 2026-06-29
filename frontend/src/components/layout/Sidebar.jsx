@@ -9,6 +9,7 @@ import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 
 const NAV_ITEMS = [
   {
@@ -30,6 +31,11 @@ const NAV_ITEMS = [
     to: ROUTES.REPORTS,
     label: "Reports",
     icon: <BarChartOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.INSIGHTS,
+    label: "Insights",
+    icon: <QueryStatsOutlinedIcon fontSize="small" />,
   },
   {
     to: ROUTES.RECURRING,

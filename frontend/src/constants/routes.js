@@ -9,4 +9,5 @@ export const ROUTES = Object.freeze({
   RECURRING: "/recurring",
   SETTINGS: "/settings",
   GOALS: "/goals",
+  INSIGHTS: "/insights",
 });
