@@ -11,12 +11,15 @@ import {
   getMonthComparisonService,
   getWeeklyTrendsService,
   getDailySpendingService,
+  getCategoryTrendsService,
+  getTopMerchantsService,
+  getBudgetUtilizationTrendService,
+  getLargestExpensesService,
+  getSpendingVelocityService,
+  getIncomeExpenseTrendService,
+  getMonthEndProjectionService,
 } from "../services/analytics/index.js";
 import cache from "../utils/cache.js";
-
-// ════════════════════════════════════════════════════════════════════════
-// EXISTING HANDLERS — unchanged
-// ════════════════════════════════════════════════════════════════════════
 
 // @route   GET /api/analytics/monthly
 // @access  Private
@@ -75,10 +78,6 @@ export const getMonthlyTrend = async (req, res, next) => {
     next(error);
   }
 };
-
-// ════════════════════════════════════════════════════════════════════════
-// NEW HANDLERS — Phase 1
-// ════════════════════════════════════════════════════════════════════════
 
 // @route   GET /api/analytics/rolling/3m
 // @access  Private
@@ -178,6 +177,92 @@ export const invalidateAnalyticsCache = async (req, res, next) => {
   try {
     const removed = cache.invalidateUser(req.user._id);
     res.status(200).json({ message: "Analytics cache cleared", removed });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/category-trends
+export const getCategoryTrends = async (req, res, next) => {
+  try {
+    const { months, type } = req.query;
+    const data = await getCategoryTrendsService(req.user._id, { months, type });
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/merchants/top
+export const getTopMerchants = async (req, res, next) => {
+  try {
+    const { days, type, limit } = req.query;
+    const data = await getTopMerchantsService(req.user._id, {
+      days,
+      type,
+      limit,
+    });
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/budgets/utilization-trend
+export const getBudgetUtilizationTrend = async (req, res, next) => {
+  try {
+    const { months } = req.query;
+    const data = await getBudgetUtilizationTrendService(req.user._id, {
+      months,
+    });
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/expenses/largest
+export const getLargestExpenses = async (req, res, next) => {
+  try {
+    const { days, type, limit } = req.query;
+    const data = await getLargestExpensesService(req.user._id, {
+      days,
+      type,
+      limit,
+    });
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/velocity
+export const getSpendingVelocity = async (req, res, next) => {
+  try {
+    const { days } = req.query;
+    const data = await getSpendingVelocityService(req.user._id, { days });
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/income-expense-trend
+export const getIncomeExpenseTrend = async (req, res, next) => {
+  try {
+    const { months } = req.query;
+    const data = await getIncomeExpenseTrendService(req.user._id, { months });
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @route   GET /api/analytics/month-end-projection
+export const getMonthEndProjection = async (req, res, next) => {
+  try {
+    const data = await getMonthEndProjectionService(req.user._id, {});
+    res.status(200).json(data);
   } catch (error) {
     next(error);
   }

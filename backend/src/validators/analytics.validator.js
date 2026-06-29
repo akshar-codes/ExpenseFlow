@@ -36,10 +36,6 @@ export const trendSchema = Joi.object({
   }),
 });
 
-// ════════════════════════════════════════════════════════════════════════
-// NEW SCHEMAS — Phase 1
-// ════════════════════════════════════════════════════════════════════════
-
 // Validator for /analytics/rolling (generic, arbitrary window size)
 export const rollingCustomSchema = Joi.object({
   months: Joi.number().integer().min(1).max(24).required().messages({
@@ -93,4 +89,33 @@ export const dailySpendingSchema = Joi.object({
     "number.min": "days must be at least 1",
     "number.max": "days cannot exceed 90",
   }),
+});
+
+export const categoryTrendsSchema = Joi.object({
+  months: Joi.number().integer().min(1).max(24).default(6),
+  type: Joi.string().valid("income", "expense").default("expense"),
+});
+
+export const topMerchantsSchema = Joi.object({
+  days: Joi.number().integer().min(1).max(365).default(90),
+  type: Joi.string().valid("income", "expense").default("expense"),
+  limit: Joi.number().integer().min(1).max(50).default(10),
+});
+
+export const budgetUtilizationSchema = Joi.object({
+  months: Joi.number().integer().min(1).max(24).default(6),
+});
+
+export const largestExpensesSchema = Joi.object({
+  days: Joi.number().integer().min(1).max(365).default(90),
+  type: Joi.string().valid("income", "expense").default("expense"),
+  limit: Joi.number().integer().min(1).max(50).default(10),
+});
+
+export const spendingVelocitySchema = Joi.object({
+  days: Joi.number().integer().min(1).max(90).default(30),
+});
+
+export const incomeExpenseTrendSchema = Joi.object({
+  months: Joi.number().integer().min(1).max(24).default(12),
 });

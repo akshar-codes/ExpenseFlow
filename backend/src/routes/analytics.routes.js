@@ -13,6 +13,13 @@ import {
   getWeeklyTrends,
   getDailySpending,
   invalidateAnalyticsCache,
+  getCategoryTrends,
+  getTopMerchants,
+  getBudgetUtilizationTrend,
+  getLargestExpenses,
+  getSpendingVelocity,
+  getIncomeExpenseTrend,
+  getMonthEndProjection,
 } from "../controllers/analytics.controller.js";
 
 import { protect } from "../middlewares/auth.middleware.js";
@@ -26,6 +33,12 @@ import {
   monthComparisonSchema,
   weeklyTrendsSchema,
   dailySpendingSchema,
+  categoryTrendsSchema,
+  topMerchantsSchema,
+  budgetUtilizationSchema,
+  largestExpensesSchema,
+  spendingVelocitySchema,
+  incomeExpenseTrendSchema,
 } from "../validators/analytics.validator.js";
 
 const router = express.Router();
@@ -99,5 +112,49 @@ router.get(
 
 // Manual cache invalidation (debug/support utility)
 router.delete("/cache", protect, invalidateAnalyticsCache);
+
+router.get(
+  "/category-trends",
+  protect,
+  validate(categoryTrendsSchema, "query"),
+  getCategoryTrends,
+);
+
+router.get(
+  "/merchants/top",
+  protect,
+  validate(topMerchantsSchema, "query"),
+  getTopMerchants,
+);
+
+router.get(
+  "/budgets/utilization-trend",
+  protect,
+  validate(budgetUtilizationSchema, "query"),
+  getBudgetUtilizationTrend,
+);
+
+router.get(
+  "/expenses/largest",
+  protect,
+  validate(largestExpensesSchema, "query"),
+  getLargestExpenses,
+);
+
+router.get(
+  "/velocity",
+  protect,
+  validate(spendingVelocitySchema, "query"),
+  getSpendingVelocity,
+);
+
+router.get(
+  "/income-expense-trend",
+  protect,
+  validate(incomeExpenseTrendSchema, "query"),
+  getIncomeExpenseTrend,
+);
+
+router.get("/month-end-projection", protect, getMonthEndProjection);
 
 export default router;
