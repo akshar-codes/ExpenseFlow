@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
+import Insights from "./pages/Insights";
 import Recurring from "./pages/Recurring";
 import Settings from "./pages/Settings";
 import { GoalsPage } from "./pages/GoalsPage";

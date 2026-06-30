@@ -21,3 +21,10 @@ export {
 
 export { getWeeklyTrendsService } from "./weekly.service.js";
 export { getDailySpendingService } from "./daily.service.js";
+export { getCategoryTrendsService } from "./categoryTrends.service.js";
+export { getTopMerchantsService } from "./topMerchants.service.js";
+export { getBudgetUtilizationTrendService } from "./budgetUtilization.service.js";
+export { getLargestExpensesService } from "./largestExpenses.service.js";
+export { getSpendingVelocityService } from "./spendingVelocity.service.js";
+export { getIncomeExpenseTrendService } from "./incomeExpenseTrend.service.js";
+export { getMonthEndProjectionService } from "./monthEndProjection.service.js";
