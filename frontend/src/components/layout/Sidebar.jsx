@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
+
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
@@ -10,6 +11,9 @@ import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+
+// ── Nav item definitions ──────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
   {
@@ -38,6 +42,11 @@ const NAV_ITEMS = [
     icon: <QueryStatsOutlinedIcon fontSize="small" />,
   },
   {
+    to: ROUTES.AI_INSIGHTS,
+    label: "AI Insights",
+    icon: <AutoAwesomeOutlinedIcon fontSize="small" />,
+  },
+  {
     to: ROUTES.RECURRING,
     label: "Recurring",
     icon: <AutorenewOutlinedIcon fontSize="small" />,
@@ -57,15 +66,13 @@ const NAV_ITEMS = [
 const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
 
-// ── Logo ───────────────────────────────────────────────────────────────────────
+// ── Logo ──────────────────────────────────────────────────────────────────────
 
 const AppLogo = ({ collapsed = false, onClick }) => (
   <Link
     to={ROUTES.HOME}
     onClick={onClick}
-    className={`flex items-center min-w-0 group ${
-      collapsed ? "justify-center" : "gap-3"
-    }`}
+    className={`flex items-center min-w-0 group ${collapsed ? "justify-center" : "gap-3"}`}
   >
     <img
       src="/logo.svg"
@@ -92,7 +99,7 @@ const AppLogo = ({ collapsed = false, onClick }) => (
   </Link>
 );
 
-// ── Collapse toggle ────────────────────────────────────────────────────────────
+// ── Collapse toggle ───────────────────────────────────────────────────────────
 
 const CollapseToggle = ({ collapsed, onClick }) => (
   <button
@@ -122,7 +129,7 @@ const CollapseToggle = ({ collapsed, onClick }) => (
   </button>
 );
 
-// ── Nav item ───────────────────────────────────────────────────────────────────
+// ── Nav item ──────────────────────────────────────────────────────────────────
 
 const NavItem = ({ to, label, icon, collapsed, onClick }) => (
   <NavLink
@@ -150,7 +157,7 @@ const NavItem = ({ to, label, icon, collapsed, onClick }) => (
   </NavLink>
 );
 
-// ── User footer ────────────────────────────────────────────────────────────────
+// ── User footer ───────────────────────────────────────────────────────────────
 
 const UserFooter = ({ user, onLogout, collapsed }) => (
   <div
@@ -221,7 +228,7 @@ const UserFooter = ({ user, onLogout, collapsed }) => (
   </div>
 );
 
-// ── Main Sidebar ───────────────────────────────────────────────────────────────
+// ── Main Sidebar ──────────────────────────────────────────────────────────────
 
 const Sidebar = ({ onCollapsedChange }) => {
   const [collapsed, setCollapsed] = useState(
@@ -268,10 +275,10 @@ const Sidebar = ({ onCollapsedChange }) => {
         width: collapsed
           ? `${SIDEBAR_COLLAPSED_WIDTH}px`
           : `${SIDEBAR_WIDTH}px`,
-        transition: "width 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
         minWidth: collapsed
           ? `${SIDEBAR_COLLAPSED_WIDTH}px`
           : `${SIDEBAR_WIDTH}px`,
+        transition: "width 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
       {/* Header */}

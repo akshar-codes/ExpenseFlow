@@ -4,11 +4,11 @@ import useAIInsights from "../hooks/useAIInsights";
 import useFonts from "../hooks/useFonts";
 import { ROUTES } from "../constants/routes";
 
-import HealthScoreWidget from "../components/aiInsights/HealthScoreWidget";
-import MonthlyAIReport from "../components/aiInsights/MonthlyAIReport";
-import InsightCard from "../components/aiInsights/InsightCard";
-import RecommendationWidget from "../components/aiInsights/RecommendationWidget";
-import MonthEndPredictionCard from "../components/aiInsights/MonthEndPredictionCard";
+import HealthScoreWidget from "../components/ai/HealthScoreWidget";
+import MonthlyAIReport from "../components/ai/MonthlyAIReport";
+import InsightCard from "../components/ai/InsightCard";
+import RecommendationWidget from "../components/ai/RecommendationWidget";
+import MonthEndPredictionCard from "../components/ai/MonthEndPredictionCard";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

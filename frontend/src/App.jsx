@@ -16,6 +16,7 @@ import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Insights from "./pages/Insights";
+import AIInsights from "./pages/AIInsights";
 import Recurring from "./pages/Recurring";
 import Settings from "./pages/Settings";
 import { GoalsPage } from "./pages/GoalsPage";
@@ -108,6 +109,14 @@ function App() {
           element={
             <RouteErrorBoundary routeName="Insights">
               <Insights />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path={ROUTES.AI_INSIGHTS}
+          element={
+            <RouteErrorBoundary routeName="AI Insights">
+              <AIInsights />
             </RouteErrorBoundary>
           }
         />
