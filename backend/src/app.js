@@ -17,6 +17,7 @@ import recurringRoutes from "./routes/recurring.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import goalRoutes from "./routes/goal.routes.js";
+import aiInsightsRoutes from "./routes/aiInsights.routes.js";
 
 import { notFound, errorHandler } from "./middlewares/error.middleware.js";
 
@@ -43,6 +44,17 @@ const analyticsLimiter = rateLimit({
   message: {
     success: false,
     message: "Too many analytics requests. Please slow down.",
+  },
+});
+
+// AI insights are expensive — tighter per-user rate limit
+const aiInsightsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.user?._id?.toString() || ipKeyGenerator(req),
+  message: {
+    success: false,
+    message: "Too many AI insight requests. Please wait a moment.",
   },
 });
 
@@ -172,6 +184,7 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/recurring", recurringRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/goals", goalRoutes);
+app.use("/api/ai-insights", aiInsightsLimiter, aiInsightsRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFound);
