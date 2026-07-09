@@ -7,22 +7,6 @@ import { startRecurringJob } from "./jobs/recurring.job.js";
 import mongoose from "mongoose";
 
 // ─── Process-level error handlers ────────────────────────────────────────────
-// Registered before any async work so that failures during startup (e.g. bad
-// env, DB connection refused) are also caught and logged in structured form.
-//
-// IMPORTANT — these handlers write directly to process.stderr instead of going
-// through the pino logger instance.  pino-pretty (and any other async pino
-// transport) runs in a worker thread; that thread may not have finished
-// initialising when an error fires during synchronous startup, which means
-// the transport stream object doesn't exist yet and calling logger.fatal()
-// would itself throw ("stream.write is not a function"), masking the original
-// error entirely.  process.stderr.write is always synchronous and available.
-
-/**
- * Writes a single newline-terminated JSON object to stderr.
- * Mirrors the pino "fatal" log shape so the output is parseable by the same
- * log shippers / grep patterns used for normal structured logs.
- */
 const stderrFatal = (type, err) => {
   const entry = {
     level: 60, // pino numeric level for "fatal"
@@ -42,16 +26,12 @@ const stderrFatal = (type, err) => {
 };
 
 // Synchronous throw that escaped every try/catch.
-// The process is in an undefined state — log and exit immediately without
-// attempting a graceful shutdown (which could itself throw or hang).
 process.on("uncaughtException", (err) => {
   stderrFatal("uncaughtException", err);
   process.exit(1);
 });
 
 // Rejected promise with no .catch() handler.
-// Node ≥ 15 terminates on unhandled rejections by default; this handler ensures
-// the reason is structured-logged before the process exits.
 process.on("unhandledRejection", (reason) => {
   // `reason` can be anything — normalise it to an Error for consistent logging.
   const err =

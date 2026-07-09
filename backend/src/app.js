@@ -18,6 +18,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import goalRoutes from "./routes/goal.routes.js";
 import aiInsightsRoutes from "./routes/aiInsights.routes.js";
+import importRoutes from "./routes/import.routes.js";
 
 import { notFound, errorHandler } from "./middlewares/error.middleware.js";
 
@@ -163,7 +164,7 @@ app.use(
 );
 
 // ─── Body parsing ─────────────────────────────────────────────────────────────
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "6mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -185,6 +186,7 @@ app.use("/api/recurring", recurringRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/ai-insights", aiInsightsLimiter, aiInsightsRoutes);
+app.use("/api/import", importRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFound);
