@@ -12,6 +12,7 @@ import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 
 // ── Nav item definitions ──────────────────────────────────────────────────────
 
@@ -25,6 +26,11 @@ const NAV_ITEMS = [
     to: ROUTES.TRANSACTIONS,
     label: "Transactions",
     icon: <SwapHorizOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.IMPORT,
+    label: "Import",
+    icon: <UploadFileOutlinedIcon fontSize="small" />,
   },
   {
     to: ROUTES.CATEGORIES,

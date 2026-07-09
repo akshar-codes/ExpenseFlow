@@ -20,6 +20,7 @@ import AIInsights from "./pages/AIInsights";
 import Recurring from "./pages/Recurring";
 import Settings from "./pages/Settings";
 import { GoalsPage } from "./pages/GoalsPage";
+import ImportTransactions from "./pages/ImportTransactions";
 
 const LoadingScreen = () => (
   <div className="h-screen flex items-center justify-center bg-background text-primaryText text-lg font-medium">
@@ -133,6 +134,14 @@ function App() {
           element={
             <RouteErrorBoundary routeName="Goals">
               <GoalsPage />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path={ROUTES.IMPORT}
+          element={
+            <RouteErrorBoundary routeName="Import Transactions">
+              <ImportTransactions />
             </RouteErrorBoundary>
           }
         />

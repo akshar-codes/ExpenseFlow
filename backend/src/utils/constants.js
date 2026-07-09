@@ -50,3 +50,34 @@ export const RATE_LIMIT_WINDOW = Object.freeze({
   LOGIN_MS: 15 * 60 * 1000,
   REGISTER_MS: 60 * 60 * 1000,
 });
+
+// ─── CSV Import — supported sources ────────────────────────────────────────────
+// ADD: to support a new bank/wallet, add its key here AND create/register a
+// matching parser in backend/src/services/import/parsers/.
+export const IMPORT_SOURCE = Object.freeze({
+  HDFC: "hdfc",
+  SBI: "sbi",
+  ICICI: "icici",
+  AXIS: "axis",
+  GOOGLE_PAY: "googlepay",
+  PHONEPE: "phonepe",
+  PAYTM: "paytm",
+});
+
+// Sources that are traditional bank statements (paymentMethod defaults to
+// "bank") vs. UPI wallet exports (paymentMethod defaults to "upi").
+export const BANK_SOURCES = Object.freeze([
+  IMPORT_SOURCE.HDFC,
+  IMPORT_SOURCE.SBI,
+  IMPORT_SOURCE.ICICI,
+  IMPORT_SOURCE.AXIS,
+]);
+
+// ─── CSV Import — batch lifecycle status ───────────────────────────────────────
+export const IMPORT_STATUS = Object.freeze({
+  PENDING: "pending",
+  PROCESSING: "processing",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  ROLLED_BACK: "rolled_back",
+});
