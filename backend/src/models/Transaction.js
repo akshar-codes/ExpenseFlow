@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { IMPORT_SOURCE } from "../utils/constants.js";
 
 const transactionSchema = new mongoose.Schema(
   {
@@ -70,6 +71,20 @@ const transactionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "RecurringTransaction",
     },
+
+    // ── CSV import lineage (additive — both optional, default null) ───────
+    importBatchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ImportBatch",
+      default: null,
+      index: true,
+    },
+
+    importSource: {
+      type: String,
+      enum: [...Object.values(IMPORT_SOURCE), null],
+      default: null,
+    },
   },
   { timestamps: true },
 );
@@ -138,6 +153,12 @@ transactionSchema.index(
 transactionSchema.index(
   { user: 1, type: 1, date: -1, amount: -1 },
   { name: "user_type_date_amount_idx" },
+);
+
+// ── Import batch lookup (used by rollback to delete a batch's rows) ───────
+transactionSchema.index(
+  { importBatchId: 1 },
+  { name: "import_batch_idx", sparse: true },
 );
 
 export default mongoose.model("Transaction", transactionSchema);
