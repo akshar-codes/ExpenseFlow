@@ -3,9 +3,12 @@ export const IMPORT_SOURCES = [
   { id: "sbi", label: "State Bank of India", group: "Bank" },
   { id: "icici", label: "ICICI Bank", group: "Bank" },
   { id: "axis", label: "Axis Bank", group: "Bank" },
+  { id: "kotak", label: "Kotak Mahindra Bank", group: "Bank" },
+  { id: "indusind", label: "Indie by IndusInd Bank", group: "Bank" },
   { id: "googlepay", label: "Google Pay", group: "Wallet" },
   { id: "phonepe", label: "PhonePe", group: "Wallet" },
   { id: "paytm", label: "Paytm", group: "Wallet" },
+  { id: "navi", label: "Navi", group: "Wallet" },
 ];
 
 export const IMPORT_FIELDS = [

@@ -57,9 +57,12 @@ export const IMPORT_SOURCE = Object.freeze({
   SBI: "sbi",
   ICICI: "icici",
   AXIS: "axis",
+  KOTAK: "kotak",
+  INDUSIND: "indusind",
   GOOGLE_PAY: "googlepay",
   PHONEPE: "phonepe",
   PAYTM: "paytm",
+  NAVI: "navi",
 });
 
 // Sources that are traditional bank statements (paymentMethod defaults to
@@ -69,6 +72,8 @@ export const BANK_SOURCES = Object.freeze([
   IMPORT_SOURCE.SBI,
   IMPORT_SOURCE.ICICI,
   IMPORT_SOURCE.AXIS,
+  IMPORT_SOURCE.KOTAK,
+  IMPORT_SOURCE.INDUSIND,
 ]);
 
 // ─── CSV Import — batch lifecycle status ───────────────────────────────────────
