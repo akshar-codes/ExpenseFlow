@@ -19,6 +19,7 @@ import healthRoutes from "./routes/health.routes.js";
 import goalRoutes from "./routes/goal.routes.js";
 import aiInsightsRoutes from "./routes/aiInsights.routes.js";
 import importRoutes from "./routes/import.routes.js";
+import notificationRoutes from "./routes/notificationPreference.routes.js";
 
 import { notFound, errorHandler } from "./middlewares/error.middleware.js";
 
@@ -187,6 +188,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/ai-insights", aiInsightsLimiter, aiInsightsRoutes);
 app.use("/api/import", importRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFound);

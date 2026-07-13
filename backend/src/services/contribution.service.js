@@ -4,6 +4,8 @@ import Transaction from "../models/Transaction.js";
 import { ServiceError } from "../utils/ServiceError.js";
 import * as contributionRepo from "../repositories/contribution.repository.js";
 import { CONTRIBUTION_SOURCE } from "../models/Contribution.js";
+import { enqueueEmail } from "./email/emailQueue.service.js";
+import { EMAIL_TYPES } from "../models/NotificationPreference.js";
 import logger from "../config/logger.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -37,6 +39,31 @@ async function withSession(fn) {
 }
 
 /**
+ * Enqueue a "goal completed" email exactly once per goal, guarded by
+ */
+export function notifyGoalCompleted(userId, goal, createdAt) {
+  const daysToComplete = createdAt
+    ? Math.round((Date.now() - new Date(createdAt).getTime()) / 86400000)
+    : null;
+
+  enqueueEmail({
+    userId,
+    type: EMAIL_TYPES.GOAL_COMPLETED,
+    payload: {
+      goalTitle: goal.title,
+      targetAmount: goal.targetAmount,
+      daysToComplete,
+    },
+    dedupeKey: `goalCompleted:${goal._id}`,
+  }).catch((err) =>
+    logger.error(
+      { err: err.message, goalId: goal._id },
+      "notifyGoalCompleted: failed to enqueue goal completed email",
+    ),
+  );
+}
+
+/**
  * Apply a delta to Goal.currentAmount and let the pre-save hook
  * handle auto-completion logic.
  */
@@ -48,23 +75,25 @@ async function applyDeltaToGoal(goalId, userId, delta, session) {
   );
   if (!goal) throw new ServiceError("Goal not found", 404);
 
+  const wasCompleted = goal.status === "completed";
+  const createdAt = goal.createdAt;
+
   goal.currentAmount = Math.max(
     0,
     Math.round((goal.currentAmount + delta) * 100) / 100,
   );
-  return goal.save(session ? { session } : {});
+  const saved = await goal.save(session ? { session } : {});
+
+  if (!wasCompleted && saved.status === "completed") {
+    notifyGoalCompleted(userId, saved, createdAt);
+  }
+
+  return saved;
 }
 
 // ─── ADD CONTRIBUTION (manual) ────────────────────────────────────────────────
 
-/**
- * Add a manual contribution to a goal.
- *
- * Business rules:
- *  - `allowOverSaving: false` (default) → rejects if adding `amount` would
- *    push currentAmount above targetAmount.
- *  - `allowOverSaving: true` → allows it (user is over-saving for a buffer).
- */
+
 export async function addContribution(userId, goalId, body) {
   const { amount, note = "", date, allowOverSaving = false } = body;
 
@@ -130,11 +159,7 @@ export async function addContribution(userId, goalId, body) {
 
 // ─── LINK TRANSACTION ─────────────────────────────────────────────────────────
 
-/**
- * Link an existing Transaction to a Goal as a contribution.
- * The transaction must belong to the same user.
- * `amount` can be less than the transaction's full amount (partial allocation).
- */
+
 export async function linkTransaction(userId, goalId, body) {
   const { transactionId, amount, note = "", allowOverSaving = false } = body;
 
@@ -230,8 +255,6 @@ export async function linkTransaction(userId, goalId, body) {
 
 /**
  * Reverse a contribution:
- *  - Sets isUndone = true, undoneAt = now
- *  - Subtracts amount from Goal.currentAmount (floored at 0)
  */
 export async function undoContribution(userId, contributionId) {
   const contribution = await contributionRepo.findById(contributionId, userId);

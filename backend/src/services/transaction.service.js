@@ -8,8 +8,16 @@ import {
   utcMonthYear,
 } from "../utils/dateUtils.js";
 import { ServiceError } from "../utils/ServiceError.js";
+import { enqueueEmail } from "./email/emailQueue.service.js";
+import { EMAIL_TYPES } from "../models/NotificationPreference.js";
+import logger from "../config/logger.js";
 
 const MAX_AMOUNT = 1_000_000_000;
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -69,7 +77,7 @@ const checkBudgetWarning = async (userId, category, amount, date) => {
     category: new mongoose.Types.ObjectId(category),
     month,
     year,
-  });
+  }).populate("category", "name");
 
   if (!budget) return { budgetWarning: false, warningMessage: "" };
 
@@ -91,8 +99,32 @@ const checkBudgetWarning = async (userId, category, amount, date) => {
   const newAmountCents = Math.round(amount * 100);
   const limitCents = Math.round(budget.limit * 100);
   const newTotalCents = spentCents + newAmountCents;
+  const percentage = Math.round((newTotalCents / limitCents) * 10000) / 100;
+  const exceeded = newTotalCents > limitCents;
 
-  if (newTotalCents > limitCents) {
+  
+  if (percentage >= 80) {
+    enqueueEmail({
+      userId,
+      type: EMAIL_TYPES.BUDGET_WARNING,
+      payload: {
+        categoryName: budget.category?.name ?? "this category",
+        limit: budget.limit,
+        spent: Math.round(newTotalCents) / 100,
+        percentage,
+        exceeded,
+        monthLabel: `${MONTH_NAMES[month - 1]} ${year}`,
+      },
+      dedupeKey: `budgetWarning:${category}:${year}-${month}`,
+    }).catch((err) =>
+      logger.error(
+        { err: err.message, userId, category },
+        "checkBudgetWarning: failed to enqueue budget warning email",
+      ),
+    );
+  }
+
+  if (exceeded) {
     const overspendRupees = ((newTotalCents - limitCents) / 100).toFixed(2);
     return {
       budgetWarning: true,

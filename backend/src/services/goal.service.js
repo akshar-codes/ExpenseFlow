@@ -1,4 +1,5 @@
 import * as goalRepository from "../repositories/goal.repository.js";
+import { notifyGoalCompleted } from "./contribution.service.js";
 import logger from "../config/logger.js";
 
 export class GoalNotFoundError extends Error {
@@ -75,10 +76,19 @@ export async function getGoalById(goalId, userId) {
 }
 
 export async function updateGoal(goalId, userId, data) {
+  
+  const before = await goalRepository.findById(goalId, userId);
+  const wasCompleted = before?.status === "completed";
+  const createdAt = before?.createdAt;
+
   const updated = await goalRepository.update(goalId, userId, data);
 
   if (!updated) {
     throw new GoalNotFoundError(goalId);
+  }
+
+  if (!wasCompleted && updated.status === "completed") {
+    notifyGoalCompleted(userId, updated, createdAt);
   }
 
   logger.info({ goalId, userId }, "Goal updated");

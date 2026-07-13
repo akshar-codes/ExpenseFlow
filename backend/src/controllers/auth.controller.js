@@ -6,6 +6,9 @@ import {
   generateRefreshToken,
 } from "../utils/generateToken.js";
 import Category from "../models/Category.js";
+import { enqueueEmail } from "../services/email/emailQueue.service.js";
+import { EMAIL_TYPES } from "../models/NotificationPreference.js";
+import logger from "../config/logger.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const hashToken = (token) =>
@@ -46,6 +49,19 @@ export const registerUser = async (req, res, next) => {
 
     await Category.insertMany(
       defaultCategories.map((cat) => ({ ...cat, user: user._id })),
+    );
+
+    // Fire-and-forget: registration must succeed even if the welcome email
+
+    enqueueEmail({
+      userId: user._id,
+      type: EMAIL_TYPES.WELCOME,
+      payload: { name: user.name },
+    }).catch((err) =>
+      logger.error(
+        { err: err.message, userId: user._id },
+        "registerUser: failed to enqueue welcome email",
+      ),
     );
 
     const accessToken = generateAccessToken(user._id);
