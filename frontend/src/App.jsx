@@ -19,6 +19,7 @@ import Insights from "./pages/Insights";
 import AIInsights from "./pages/AIInsights";
 import Recurring from "./pages/Recurring";
 import Settings from "./pages/Settings";
+import NotificationSettings from "./pages/NotificationSettings";
 import { GoalsPage } from "./pages/GoalsPage";
 import ImportTransactions from "./pages/ImportTransactions";
 
@@ -150,6 +151,14 @@ function App() {
           element={
             <RouteErrorBoundary routeName="Settings">
               <Settings />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path={ROUTES.NOTIFICATIONS}
+          element={
+            <RouteErrorBoundary routeName="Notification Settings">
+              <NotificationSettings />
             </RouteErrorBoundary>
           }
         />

@@ -8,6 +8,7 @@ export const ROUTES = Object.freeze({
   REPORTS: "/reports",
   RECURRING: "/recurring",
   SETTINGS: "/settings",
+  NOTIFICATIONS: "/settings/notifications",
   GOALS: "/goals",
   INSIGHTS: "/insights",
   AI_INSIGHTS: "/ai-insights",

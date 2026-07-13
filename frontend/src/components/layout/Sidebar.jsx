@@ -13,6 +13,7 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 
 // ── Nav item definitions ──────────────────────────────────────────────────────
 
@@ -61,6 +62,11 @@ const NAV_ITEMS = [
     to: ROUTES.GOALS,
     label: "Goals",
     icon: <TrackChangesIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.NOTIFICATIONS,
+    label: "Notifications",
+    icon: <NotificationsOutlinedIcon fontSize="small" />,
   },
   {
     to: ROUTES.SETTINGS,
