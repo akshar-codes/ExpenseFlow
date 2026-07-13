@@ -1,21 +1,10 @@
 import cron from "node-cron";
-import mongoose from "mongoose";
 import RecurringTransaction from "../models/RecurringTransaction.js";
 import Transaction from "../models/Transaction.js";
 import Category from "../models/Category.js";
+import { acquireJobLock, releaseJobLock } from "../utils/jobLock.js";
 
-// ─── Distributed lock model ───────────────────────────────────────────────────
-
-const jobLockSchema = new mongoose.Schema({
-  job: { type: String, required: true, unique: true },
-  lockedAt: { type: Date, required: true, default: Date.now },
-  lockedBy: { type: String },
-});
-
-jobLockSchema.index({ lockedAt: 1 }, { expireAfterSeconds: 600 });
-
-const JobLock =
-  mongoose.models.JobLock || mongoose.model("JobLock", jobLockSchema);
+// ─── Lock config ──────────────────────────────────────────────────────────────
 
 const LOCK_NAME = "recurring_cron";
 const LOCK_TTL_MS = 9 * 60 * 1000; // 9 min — safely under the 10-min TTL index
@@ -49,47 +38,12 @@ const shouldRunFrequency = (item, today, last) => {
   }
 };
 
-// ─── Acquire distributed lock ─────────────────────────────────────────────────
-
-const acquireLock = async () => {
-  const lockedBy = `${process.env.HOSTNAME || "unknown"}:${process.pid}`;
-  const staleThreshold = new Date(Date.now() - LOCK_TTL_MS);
-
-  try {
-    await JobLock.findOneAndUpdate(
-      {
-        job: LOCK_NAME,
-        lockedAt: { $lt: staleThreshold }, // only stale locks can be stolen
-      },
-      { $set: { lockedAt: new Date(), lockedBy } },
-      { upsert: true },
-    );
-    return true;
-  } catch (err) {
-    // E11000: a fresh (non-stale) lock document already exists for this job
-    if (err.code === 11000) return false;
-    console.error("[recurring-job] Lock acquisition error:", err.message);
-    return false;
-  }
-};
-
-const releaseLock = async () => {
-  try {
-    await JobLock.deleteOne({ job: LOCK_NAME });
-  } catch (err) {
-    console.warn(
-      "[recurring-job] Lock release failed (non-fatal):",
-      err.message,
-    );
-  }
-};
-
 // ─── Main job logic ───────────────────────────────────────────────────────────
 
 const BATCH_SIZE = 200;
 
 const runJob = async () => {
-  const acquired = await acquireLock();
+  const acquired = await acquireJobLock(LOCK_NAME, LOCK_TTL_MS);
   if (!acquired) {
     console.log("[recurring-job] Lock held by another instance — skipping.");
     return;
@@ -258,7 +212,7 @@ const runJob = async () => {
   } catch (err) {
     console.error("[recurring-job] Fatal error:", err.message);
   } finally {
-    await releaseLock();
+    await releaseJobLock(LOCK_NAME);
     console.log(
       `[recurring-job] Done — processed:${processed} skipped:${skipped} failed:${failed}`,
     );
