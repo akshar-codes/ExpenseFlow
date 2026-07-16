@@ -13,4 +13,5 @@ export const ROUTES = Object.freeze({
   INSIGHTS: "/insights",
   AI_INSIGHTS: "/ai-insights",
   IMPORT: "/import",
+  REPORT_CENTER: "/report-center",
 });

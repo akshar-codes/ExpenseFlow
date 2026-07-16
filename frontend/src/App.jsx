@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import NotificationSettings from "./pages/NotificationSettings";
 import { GoalsPage } from "./pages/GoalsPage";
 import ImportTransactions from "./pages/ImportTransactions";
+import ReportCenter from "./pages/ReportCenter";
 
 const LoadingScreen = () => (
   <div className="h-screen flex items-center justify-center bg-background text-primaryText text-lg font-medium">
@@ -103,6 +104,14 @@ function App() {
           element={
             <RouteErrorBoundary routeName="Reports">
               <Reports />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path={ROUTES.REPORT_CENTER}
+          element={
+            <RouteErrorBoundary routeName="Report Center">
+              <ReportCenter />
             </RouteErrorBoundary>
           }
         />

@@ -14,6 +14,7 @@ import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 
 // ── Nav item definitions ──────────────────────────────────────────────────────
 
@@ -42,6 +43,11 @@ const NAV_ITEMS = [
     to: ROUTES.REPORTS,
     label: "Reports",
     icon: <BarChartOutlinedIcon fontSize="small" />,
+  },
+  {
+    to: ROUTES.REPORT_CENTER,
+    label: "Report Center",
+    icon: <PictureAsPdfOutlinedIcon fontSize="small" />,
   },
   {
     to: ROUTES.INSIGHTS,
@@ -418,7 +424,7 @@ const Sidebar = ({ onCollapsedChange }) => {
               className="text-[10px] text-secondaryText/40"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              v1.0.0
+              v1.7.0
             </p>
           </div>
         </aside>

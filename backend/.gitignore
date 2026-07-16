@@ -3,3 +3,4 @@ node_modules
 dist
 sample.txt
 test.json
+generated-reports
