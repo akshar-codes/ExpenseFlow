@@ -98,7 +98,7 @@ export const updateRecurringTransaction = async (req, res, next) => {
     const recurring = await RecurringTransaction.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       { $set: fields },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!recurring) {

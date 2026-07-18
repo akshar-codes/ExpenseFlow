@@ -152,7 +152,7 @@ export const refreshAccessToken = async (req, res) => {
         refreshTokenHash: currentHash, // must match to succeed
       },
       { $set: { refreshTokenHash: newHash } },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (!user) {

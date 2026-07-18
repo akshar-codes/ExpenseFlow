@@ -5,8 +5,7 @@ export const isServiceWorkerSupported = () =>
 
 export const isBackgroundSyncSupported = () =>
   isServiceWorkerSupported() &&
-  "SyncManager" in window &&
-  "sync" in window.ServiceWorkerRegistration?.prototype;
+  (window.ServiceWorkerRegistration ? "sync" in window.ServiceWorkerRegistration.prototype : false);
 
 export const isPushSupported = () =>
   isServiceWorkerSupported() &&

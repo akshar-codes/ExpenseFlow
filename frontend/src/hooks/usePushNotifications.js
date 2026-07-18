@@ -33,7 +33,10 @@ const usePushNotifications = () => {
   }, [supported]);
 
   useEffect(() => {
-    refreshSubscription();
+    const init = async () => {
+      await refreshSubscription();
+    };
+    init();
   }, [refreshSubscription]);
 
   const subscribe = useCallback(async () => {

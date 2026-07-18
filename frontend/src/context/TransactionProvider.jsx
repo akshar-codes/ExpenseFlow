@@ -19,7 +19,7 @@ import {
 import {
   SYNC_COMPLETE_EVENT,
   notifyQueueChanged,
-} from "../context/PWAProvider";
+} from "../utils/pwa/pwaEvents";
 import useCategories from "../hooks/useCategories";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";

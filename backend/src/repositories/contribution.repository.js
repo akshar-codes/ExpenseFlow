@@ -100,7 +100,7 @@ export async function softUndo(contributionId, userId, session = null) {
   return Contribution.findOneAndUpdate(
     { _id: contributionId, user: userId, isUndone: false },
     { $set: { isUndone: true, undoneAt: new Date() } },
-    { new: true, ...(session ? { session } : {}) },
+    { returnDocument: "after", ...(session ? { session } : {}) },
   );
 }
 

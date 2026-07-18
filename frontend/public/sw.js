@@ -87,10 +87,6 @@ const putWithTimestamp = async (cacheName, request, response) => {
   return response;
 };
 
-const isFresh = (cachedResponse) => {
-  const cachedAt = Number(cachedResponse.headers.get("sw-cached-at") || 0);
-  return Date.now() - cachedAt < API_CACHE_MAX_AGE_MS;
-};
 
 // ─── Strategies ─────────────────────────────────────────────────────────────
 

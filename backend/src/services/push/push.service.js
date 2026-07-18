@@ -30,7 +30,7 @@ export const subscribeService = async (userId, body = {}, userAgent = "") => {
       userAgent: userAgent.slice(0, 300),
       lastSeenAt: new Date(),
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
   );
 };
 

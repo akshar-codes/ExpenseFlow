@@ -12,12 +12,7 @@ import {
 } from "../utils/pwa/serviceWorkerRegistration";
 import { getPendingCount } from "../utils/pwa/indexedDbQueue";
 
-export const SYNC_COMPLETE_EVENT = "pwa:sync-complete";
-export const QUEUE_CHANGED_EVENT = "pwa:queue-changed";
-
-export const notifyQueueChanged = () => {
-  window.dispatchEvent(new CustomEvent(QUEUE_CHANGED_EVENT));
-};
+import { SYNC_COMPLETE_EVENT, QUEUE_CHANGED_EVENT } from "../utils/pwa/pwaEvents";
 
 export const PWAProvider = ({ children }) => {
   const isOnline = useOnlineStatus();
@@ -85,11 +80,21 @@ export const PWAProvider = ({ children }) => {
 
   // ── Track the offline queue size ────────────────────────────────────────
   useEffect(() => {
-    refreshPendingCount();
+    const init = async () => {
+      await refreshPendingCount();
+    };
+    init();
     window.addEventListener(QUEUE_CHANGED_EVENT, refreshPendingCount);
     return () =>
       window.removeEventListener(QUEUE_CHANGED_EVENT, refreshPendingCount);
   }, [refreshPendingCount]);
+
+  const triggerSync = useCallback(async () => {
+    const count = await getPendingCount().catch(() => 0);
+    if (count === 0) return;
+    setSyncStatus("syncing");
+    await requestTransactionSync();
+  }, []);
 
   // ── Trigger a sync automatically when connectivity returns ─────────────
   useEffect(() => {
@@ -104,13 +109,6 @@ export const PWAProvider = ({ children }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline]);
-
-  const triggerSync = useCallback(async () => {
-    const count = await getPendingCount().catch(() => 0);
-    if (count === 0) return;
-    setSyncStatus("syncing");
-    await requestTransactionSync();
-  }, []);
 
   const reloadForUpdate = useCallback(() => {
     skipWaitingAndReload(registration);

@@ -51,7 +51,7 @@ export const setBudgetService = async (userId, body) => {
       year: Number(year),
     },
     { limit: Number(limit) },
-    { new: true, upsert: true },
+    { returnDocument: "after", upsert: true },
   ).populate("category", "name type");
 };
 

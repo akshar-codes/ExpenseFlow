@@ -60,7 +60,7 @@ export const claimBatch = async (limit = DEFAULT_BATCH_SIZE) => {
         scheduledFor: { $lte: new Date() },
       },
       { $set: { status: EMAIL_STATUS.PROCESSING } },
-      { new: true, sort: { scheduledFor: 1 } },
+      { returnDocument: "after", sort: { scheduledFor: 1 } },
     );
 
     if (!doc) break; // nothing left to claim

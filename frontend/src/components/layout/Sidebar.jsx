@@ -310,7 +310,7 @@ const Sidebar = ({ onCollapsedChange }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden no-scrollbar">
         {NAV_ITEMS.map(({ to, label, icon }) => (
           <NavItem
             key={to}
@@ -410,7 +410,7 @@ const Sidebar = ({ onCollapsedChange }) => {
               </svg>
             </button>
           </div>
-          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto no-scrollbar">
             {NAV_ITEMS.map(({ to, label, icon }) => (
               <NavItem
                 key={to}
