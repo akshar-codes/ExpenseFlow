@@ -22,6 +22,7 @@ const TransactionModal = ({ mode, onClose, transaction = null }) => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [warning, setWarning] = useState("");
+  const [offlineNotice, setOfflineNotice] = useState(false);
 
   const { categories } = useCategories();
   const { addTransaction, editTransaction } = useTransactions();
@@ -36,6 +37,7 @@ const TransactionModal = ({ mode, onClose, transaction = null }) => {
     e.preventDefault();
     setError("");
     setWarning("");
+    setOfflineNotice(false);
 
     // FIX: use parseFloat + isFinite + max cap.
     // This prevents:
@@ -75,8 +77,15 @@ const TransactionModal = ({ mode, onClose, transaction = null }) => {
         await editTransaction(transaction._id, payload);
         onClose();
       } else {
-        const { budgetWarning, warningMessage } = await addTransaction(payload);
-        if (budgetWarning && warningMessage) {
+        const { budgetWarning, warningMessage, queuedOffline } =
+          await addTransaction(payload);
+
+        if (queuedOffline) {
+          // Give the person explicit confirmation their entry wasn't lost —
+          // then close after a short beat so the message registers.
+          setOfflineNotice(true);
+          setTimeout(onClose, 1400);
+        } else if (budgetWarning && warningMessage) {
           setWarning(warningMessage);
         } else {
           onClose();
@@ -119,6 +128,19 @@ const TransactionModal = ({ mode, onClose, transaction = null }) => {
           <p className="text-red-500 text-sm mb-3 bg-red-500/10 px-3 py-2 rounded-lg">
             {error}
           </p>
+        )}
+
+        {/* Offline queued Banner */}
+        {offlineNotice && (
+          <div className="flex items-start gap-2 mb-3 bg-[#6366f1]/10 border border-[#6366f1]/30 px-3 py-2 rounded-lg">
+            <span className="text-[#818cf8] text-base leading-none mt-0.5 shrink-0">
+              ⚡
+            </span>
+            <p className="text-[#a5b4fc] text-sm leading-snug">
+              You're offline — this transaction is saved on this device and will
+              sync automatically once you're back online.
+            </p>
+          </div>
         )}
 
         {/* Budget Warning Banner */}

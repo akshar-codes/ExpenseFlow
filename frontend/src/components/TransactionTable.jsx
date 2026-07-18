@@ -2,6 +2,24 @@ import React, { useState } from "react";
 import DeleteConfirm from "./DeleteConfirm";
 import { formatTransactionDate } from "../utils/dateUtils";
 
+const PendingSyncBadge = () => (
+  <span
+    className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full border shrink-0"
+    style={{
+      color: "#a5b4fc",
+      background: "rgba(99,102,241,0.10)",
+      borderColor: "rgba(99,102,241,0.3)",
+    }}
+    title="Saved on this device — will sync automatically once you're back online"
+  >
+    <span
+      className="w-1.5 h-1.5 rounded-full border border-current border-t-transparent animate-spin"
+      aria-hidden
+    />
+    Queued
+  </span>
+);
+
 const TransactionTable = ({ transactions, onDelete, onEdit }) => {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -46,12 +64,13 @@ const TransactionTable = ({ transactions, onDelete, onEdit }) => {
             <tbody>
               {transactions.map((tx, idx) => {
                 const isIncome = tx.type === "income";
+                const isPendingSync = Boolean(tx.isPendingSync);
                 const categoryLabel =
                   tx.categoryName ||
                   (typeof tx.category === "object"
                     ? tx.category?.name
                     : null) ||
-                  "Unknown";
+                  (isPendingSync ? "Pending category" : "Unknown");
 
                 return (
                   <tr
@@ -59,10 +78,14 @@ const TransactionTable = ({ transactions, onDelete, onEdit }) => {
                     className={[
                       "border-b border-border/50 hover:bg-[#1c1c1f] transition-colors duration-100",
                       idx % 2 === 0 ? "" : "bg-white/[0.015]",
+                      isPendingSync ? "opacity-70" : "",
                     ].join(" ")}
                   >
                     <td className="px-4 py-2.5 text-sm font-medium text-primaryText whitespace-nowrap">
-                      {categoryLabel}
+                      <div className="flex items-center gap-2">
+                        <span>{categoryLabel}</span>
+                        {isPendingSync && <PendingSyncBadge />}
+                      </div>
                     </td>
 
                     <td className="px-4 py-2.5">
@@ -99,7 +122,7 @@ const TransactionTable = ({ transactions, onDelete, onEdit }) => {
                     {(onDelete || onEdit) && (
                       <td className="px-4 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {onEdit && (
+                          {onEdit && !isPendingSync && (
                             <button
                               onClick={() => onEdit(tx)}
                               className="text-[11px] text-secondaryText/50 hover:text-accent
@@ -108,7 +131,7 @@ const TransactionTable = ({ transactions, onDelete, onEdit }) => {
                               Edit
                             </button>
                           )}
-                          {onDelete && (
+                          {onDelete && !isPendingSync && (
                             <button
                               onClick={() =>
                                 setDeleteTarget({
