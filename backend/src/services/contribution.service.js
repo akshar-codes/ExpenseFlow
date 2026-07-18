@@ -5,6 +5,7 @@ import { ServiceError } from "../utils/ServiceError.js";
 import * as contributionRepo from "../repositories/contribution.repository.js";
 import { CONTRIBUTION_SOURCE } from "../models/Contribution.js";
 import { enqueueEmail } from "./email/emailQueue.service.js";
+import { sendPushToUser } from "./push/push.service.js";
 import { EMAIL_TYPES } from "../models/NotificationPreference.js";
 import logger from "../config/logger.js";
 
@@ -39,7 +40,9 @@ async function withSession(fn) {
 }
 
 /**
- * Enqueue a "goal completed" email exactly once per goal, guarded by
+ * Notifies a user that a goal completed, via email and push (both
+ * fire-and-forget, guarded per-goal at the call site by the
+ * wasCompleted/status transition check so this only ever fires once).
  */
 export function notifyGoalCompleted(userId, goal, createdAt) {
   const daysToComplete = createdAt
@@ -59,6 +62,18 @@ export function notifyGoalCompleted(userId, goal, createdAt) {
     logger.error(
       { err: err.message, goalId: goal._id },
       "notifyGoalCompleted: failed to enqueue goal completed email",
+    ),
+  );
+
+  sendPushToUser(userId, {
+    title: "🎯 Goal completed!",
+    body: `You've fully funded "${goal.title}". Nice work.`,
+    url: "/goals",
+    tag: `goal-completed-${goal._id}`,
+  }).catch((err) =>
+    logger.error(
+      { err: err.message, goalId: goal._id },
+      "notifyGoalCompleted: failed to send push notification",
     ),
   );
 }
@@ -92,7 +107,6 @@ async function applyDeltaToGoal(goalId, userId, delta, session) {
 }
 
 // ─── ADD CONTRIBUTION (manual) ────────────────────────────────────────────────
-
 
 export async function addContribution(userId, goalId, body) {
   const { amount, note = "", date, allowOverSaving = false } = body;
@@ -158,7 +172,6 @@ export async function addContribution(userId, goalId, body) {
 }
 
 // ─── LINK TRANSACTION ─────────────────────────────────────────────────────────
-
 
 export async function linkTransaction(userId, goalId, body) {
   const { transactionId, amount, note = "", allowOverSaving = false } = body;

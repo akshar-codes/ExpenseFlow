@@ -4,6 +4,7 @@ import { loadEnv } from "./config/env.js";
 import { validateEnv } from "./config/validateEnv.js";
 import { connectDB } from "./config/db.js";
 import { startAllJobs } from "./jobs/index.js";
+import { configureWebPush } from "./services/push/webPush.config.js";
 import mongoose from "mongoose";
 
 // ─── Process-level error handlers ────────────────────────────────────────────
@@ -50,6 +51,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
+    configureWebPush(); // Optional — logs a warning and no-ops if VAPID keys are unset
     startAllJobs();
 
     const server = app.listen(PORT, () => {

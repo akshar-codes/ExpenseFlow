@@ -21,6 +21,7 @@ import aiInsightsRoutes from "./routes/aiInsights.routes.js";
 import importRoutes from "./routes/import.routes.js";
 import notificationRoutes from "./routes/notificationPreference.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import pushRoutes from "./routes/push.routes.js";
 
 import { notFound, errorHandler } from "./middlewares/error.middleware.js";
 
@@ -191,6 +192,7 @@ app.use("/api/ai-insights", aiInsightsLimiter, aiInsightsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/push", pushRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFound);

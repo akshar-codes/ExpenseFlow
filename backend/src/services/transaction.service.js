@@ -9,14 +9,25 @@ import {
 } from "../utils/dateUtils.js";
 import { ServiceError } from "../utils/ServiceError.js";
 import { enqueueEmail } from "./email/emailQueue.service.js";
+import { sendPushToUser } from "./push/push.service.js";
 import { EMAIL_TYPES } from "../models/NotificationPreference.js";
 import logger from "../config/logger.js";
 
 const MAX_AMOUNT = 1_000_000_000;
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -102,13 +113,14 @@ const checkBudgetWarning = async (userId, category, amount, date) => {
   const percentage = Math.round((newTotalCents / limitCents) * 10000) / 100;
   const exceeded = newTotalCents > limitCents;
 
-  
   if (percentage >= 80) {
+    const categoryName = budget.category?.name ?? "this category";
+
     enqueueEmail({
       userId,
       type: EMAIL_TYPES.BUDGET_WARNING,
       payload: {
-        categoryName: budget.category?.name ?? "this category",
+        categoryName,
         limit: budget.limit,
         spent: Math.round(newTotalCents) / 100,
         percentage,
@@ -120,6 +132,22 @@ const checkBudgetWarning = async (userId, category, amount, date) => {
       logger.error(
         { err: err.message, userId, category },
         "checkBudgetWarning: failed to enqueue budget warning email",
+      ),
+    );
+
+    // Push mirrors the email for users who have the app installed as a
+    // PWA — fire-and-forget, never blocks the transaction response, and
+    // silently no-ops if the user has no push subscriptions or the server
+    // has no VAPID keys configured (see push/webPush.config.js).
+    sendPushToUser(userId, {
+      title: exceeded ? "Budget exceeded" : "Budget warning",
+      body: `${categoryName} is at ${percentage}% of its ${MONTH_NAMES[month - 1]} budget.`,
+      url: "/categories",
+      tag: `budget-${category}-${year}-${month}`,
+    }).catch((err) =>
+      logger.error(
+        { err: err.message, userId, category },
+        "checkBudgetWarning: failed to send push notification",
       ),
     );
   }
