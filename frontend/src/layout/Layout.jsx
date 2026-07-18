@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
+import PWAStatusBar from "../components/pwa/PWAStatusBar";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {
@@ -17,6 +18,7 @@ const Layout = () => {
     ${sidebarCollapsed ? "lg:ml-14" : "lg:ml-60"}
   `}
       >
+        <PWAStatusBar />
         <Outlet />
       </main>
     </div>

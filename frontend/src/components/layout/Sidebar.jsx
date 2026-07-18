@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
+import PWAInlineStatus from "../pwa/PWAInlineStatus";
 
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
@@ -322,6 +323,9 @@ const Sidebar = ({ onCollapsedChange }) => {
         ))}
       </nav>
 
+      {/* PWA sync / pending status — hidden entirely when idle */}
+      {!collapsed && <PWAInlineStatus className="px-3 pb-1" />}
+
       {/* Footer */}
       <UserFooter user={user} onLogout={handleLogout} collapsed={collapsed} />
 
@@ -332,7 +336,7 @@ const Sidebar = ({ onCollapsedChange }) => {
             className="text-[10px] text-secondaryText/40"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            v1.0.0
+            v1.8.0
           </p>
         </div>
       )}
@@ -418,13 +422,14 @@ const Sidebar = ({ onCollapsedChange }) => {
               />
             ))}
           </nav>
+          <PWAInlineStatus className="px-3 pb-1" />
           <UserFooter user={user} onLogout={handleLogout} collapsed={false} />
           <div className="px-4 pb-3">
             <p
               className="text-[10px] text-secondaryText/40"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              v1.7.0
+              v1.8.0
             </p>
           </div>
         </aside>
