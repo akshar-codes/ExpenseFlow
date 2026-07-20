@@ -1,17 +1,1 @@
-export const ROUTES = Object.freeze({
-  HOME: "/",
-  LOGIN: "/login",
-  REGISTER: "/register",
-  DASHBOARD: "/dashboard",
-  TRANSACTIONS: "/transactions",
-  CATEGORIES: "/categories",
-  REPORTS: "/reports",
-  RECURRING: "/recurring",
-  SETTINGS: "/settings",
-  NOTIFICATIONS: "/settings/notifications",
-  GOALS: "/goals",
-  INSIGHTS: "/insights",
-  AI_INSIGHTS: "/ai-insights",
-  IMPORT: "/import",
-  REPORT_CENTER: "/report-center",
-});
+export const routes = {};
