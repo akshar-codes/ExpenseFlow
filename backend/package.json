@@ -3,7 +3,7 @@
     "node": "24.16.0"
   },
   "name": "backend",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -29,11 +29,13 @@
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
+    "multer": "^2.0.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.15.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
+    "tesseract.js": "^5.1.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
